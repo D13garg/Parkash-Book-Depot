@@ -1,0 +1,102 @@
+# ============================================================
+#  Parkash Book Depot — .gitignore
+#  Stack: Python/FastAPI (backend) + React/Vite/TS (frontend)
+# ============================================================
+
+# ──────────────────────────────────────────
+#  Environment & Secrets
+# ──────────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+!.env.example          # keep the example template
+
+# ──────────────────────────────────────────
+#  Python / FastAPI (backend)
+# ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# Package & distribution
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# pytest
+.pytest_cache/
+.cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# mypy / type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# ──────────────────────────────────────────
+#  Node.js / React / Vite (frontend)
+# ──────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# ──────────────────────────────────────────
+#  IDEs & Editors
+# ──────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ──────────────────────────────────────────
+#  OS Artifacts
+# ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ──────────────────────────────────────────
+#  Logs & Temp Files
+# ──────────────────────────────────────────
+*.log
+logs/
+tmp/
+temp/
+
+# ──────────────────────────────────────────
+#  Misc
+# ──────────────────────────────────────────
+*.bak
+*.orig

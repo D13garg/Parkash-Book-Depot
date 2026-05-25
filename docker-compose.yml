@@ -1,0 +1,62 @@
+version: "3.9"
+services:
+  mongodb:
+    image: mongo:7
+    container_name: parkash_mongo
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongopassword
+      MONGO_INITDB_DATABASE: parkash_book_depot
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - parkash_network
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    container_name: parkash_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      SECRET_KEY: ${SECRET_KEY:-change-this-in-production}
+      MONGODB_URL: mongodb://admin:mongopassword@mongodb:27017/parkash_book_depot?authSource=admin
+      MONGODB_DB_NAME: parkash_book_depot
+      ALLOWED_ORIGINS: '["http://localhost"]'
+      ADMIN_NAME: ${ADMIN_NAME:-Vivek Kumar}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-parkashbookdepot723@gmail.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-pbd7232629}
+      ASSOCIATE_NAME: ${ASSOCIATE_NAME:-Associate User}
+      ASSOCIATE_EMAIL: ${ASSOCIATE_EMAIL:-associate@parkashbookdepot.com}
+      ASSOCIATE_PASSWORD: ${ASSOCIATE_PASSWORD:-associate123}
+    depends_on:
+      - mongodb
+    networks:
+      - parkash_network
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    container_name: parkash_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - parkash_network
+
+volumes:
+  mongo_data:
+
+networks:
+  parkash_network:
+    driver: bridge
