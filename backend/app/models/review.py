@@ -1,22 +1,16 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from datetime import datetime, timezone
 from typing import Optional
 
 
 class ReviewModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
-
-    reviewer_name: str
-    reviewer_email: EmailStr
-
+    customer_id: str                        # who submitted it
+    customer_name: str                      # denormalised for admin view
     rating: int = Field(..., ge=1, le=5)
-
-    review_type: str
+    category: str                           # overall | service | delivery | quality
     message: str
-
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
         populate_by_name = True

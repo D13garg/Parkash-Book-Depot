@@ -1,29 +1,18 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
 
 
-class ReviewCreate(BaseModel):
-    reviewer_name: str
-    reviewer_email: EmailStr
-
+class CreateReviewRequest(BaseModel):
     rating: int = Field(..., ge=1, le=5)
-
-    review_type: str
-    message: str
+    category: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=5)
 
 
 class ReviewResponse(BaseModel):
-    id: Optional[str] = Field(default=None, alias="_id")
-
-    reviewer_name: str
-    reviewer_email: EmailStr
-
+    id: str
+    customer_id: str
+    customer_name: str
     rating: int
-    review_type: str
+    category: str
     message: str
-
     created_at: datetime
-
-    class Config:
-        populate_by_name = True

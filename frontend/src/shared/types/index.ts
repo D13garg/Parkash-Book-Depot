@@ -122,3 +122,14 @@ export interface PaginatedResponse<T> {
   page_size: number
   total_pages: number
 }
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export interface Review {
+  id: string
+  customer_id: string
+  customer_name: string
+  rating: number
+  category: string
+  message: string
+  created_at: string
+}
