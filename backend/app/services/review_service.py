@@ -30,3 +30,9 @@ class ReviewService:
         self,
     ) -> List[ReviewModel]:
         return await self.repository.get_reviews()
+
+    async def get_reviews_by_reviewer(
+        self,
+        reviewer_email: str,
+    ) -> List[ReviewModel]:
+        return await self.repository.find_by_reviewer_email(reviewer_email)

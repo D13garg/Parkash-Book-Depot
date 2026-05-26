@@ -1,12 +1,30 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
 
-from app.schemas.review import ReviewCreate, ReviewResponse
-from app.repositories.review_repository import ReviewRepository
+from app.schemas.review import (
+    ReviewCreate,
+    ReviewResponse,
+)
+
+from app.repositories.review_repository import (
+    ReviewRepository,
+)
+
+from app.services.review_service import (
+    ReviewService,
+)
+
 from app.core.database import get_database
-from app.dependencies.auth import get_current_user
 
+from app.dependencies.auth import (
+    get_current_user,
+)
 
 router = APIRouter()
 
@@ -16,13 +34,17 @@ router = APIRouter()
     response_model=ReviewResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_review(payload: ReviewCreate):
+async def create_review(
+    payload: ReviewCreate,
+):
     db = get_database()
 
     repository = ReviewRepository(db)
 
-    return await repository.create_review(
-        payload.model_dump()
+    service = ReviewService(repository)
+
+    return await service.create_review(
+        payload
     )
 
 
@@ -43,4 +65,6 @@ async def get_reviews(
 
     repository = ReviewRepository(db)
 
-    return await repository.get_reviews()
+    service = ReviewService(repository)
+
+    return await service.get_reviews()
