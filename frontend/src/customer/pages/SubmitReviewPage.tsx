@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { useSubmitReview } from "@/shared/hooks/useReviews"
 
 const schema = z.object({
-  rating:   z.coerce.number().min(1).max(5),
+  rating:   z.number().min(1).max(5),
   category: z.string().min(1, "Select a category"),
   message:  z.string().min(5, "Please write at least 5 characters"),
 })
@@ -16,10 +16,12 @@ export function SubmitReviewPage() {
   const navigate = useNavigate()
   const { mutate: submit, isPending, isSuccess, error } = useSubmitReview()
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { rating: 5, category: "" },
   })
+
+  const currentRating = watch("rating")
 
   const onSubmit = (data: FormData) => {
     submit(data, {
@@ -54,34 +56,31 @@ export function SubmitReviewPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-          {/* Rating */}
+          {/* Rating — star buttons */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Rating <span className="text-destructive">*</span>
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
-                <label key={star} className="cursor-pointer">
-                  <input
-                    {...register("rating")}
-                    type="radio"
-                    value={star}
-                    className="sr-only"
-                  />
-                  <span className="text-2xl hover:scale-110 transition-transform block">⭐</span>
-                </label>
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setValue("rating", star)}
+                  className={`text-2xl transition-transform hover:scale-110 ${
+                    star <= currentRating ? "text-yellow-400" : "text-gray-300"
+                  }`}
+                >
+                  ★
+                </button>
               ))}
             </div>
-            <select
-              {...register("rating")}
-              className="mt-2 w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value={5}>⭐⭐⭐⭐⭐ — Excellent</option>
-              <option value={4}>⭐⭐⭐⭐ — Good</option>
-              <option value={3}>⭐⭐⭐ — Average</option>
-              <option value={2}>⭐⭐ — Poor</option>
-              <option value={1}>⭐ — Very Poor</option>
-            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {currentRating === 5 ? "Excellent" :
+               currentRating === 4 ? "Good" :
+               currentRating === 3 ? "Average" :
+               currentRating === 2 ? "Poor" : "Very Poor"}
+            </p>
             {errors.rating && <p className="mt-1 text-xs text-destructive">{errors.rating.message}</p>}
           </div>
 

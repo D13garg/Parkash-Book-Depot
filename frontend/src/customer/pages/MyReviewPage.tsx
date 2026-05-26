@@ -12,9 +12,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <span className="text-yellow-400">
-      {"⭐".repeat(rating)}
-      {"☆".repeat(5 - rating)}
+    <span>
+      {[1,2,3,4,5].map((s) => (
+        <span key={s} className={s <= rating ? "text-yellow-400" : "text-gray-300"}>★</span>
+      ))}
     </span>
   )
 }
@@ -73,7 +74,7 @@ export function MyReviewsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 flex-wrap mb-1">
                     <StarRating rating={review.rating} />
-                    <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded-full capitalize">
+                    <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
                       {CATEGORY_LABELS[review.category] ?? review.category}
                     </span>
                   </div>
