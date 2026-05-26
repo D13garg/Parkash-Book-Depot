@@ -4,7 +4,7 @@ import { BooksPage }         from "./BooksPage"
 import { MyRequestsPage }    from "./MyRequestsPage"
 import { SubmitRequestPage } from "./SubmitRequestPage"
 import { ProfilePage }       from "./ProfilePage"
-import { MyReviewsPage }     from "./MyReviewsPage"
+import { MyReviewsPage }     from "./MyReviewPage"
 import { SubmitReviewPage }  from "./SubmitReviewPage"
 
 const NAV_ITEMS = [
