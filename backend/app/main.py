@@ -48,7 +48,8 @@ def create_app() -> FastAPI:
     # ── Middleware (order matters — outermost runs first) ───────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS,   # explicit list only
+        allow_origins=settings.ALLOWED_ORIGINS,   # localhost URLs
+        allow_origin_regex=r"https://.*\.vercel\.app.*",  # any Vercel preview or production
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "Accept"],
