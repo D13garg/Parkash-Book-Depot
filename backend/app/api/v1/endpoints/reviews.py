@@ -35,8 +35,7 @@ async def get_my_reviews(
 @router.get("", response_model=List[ReviewResponse])
 async def get_all_reviews(
     db: AsyncIOMotorDatabase = Depends(get_db),
-    _: UserModel = Depends(get_current_admin),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_admin),
 ):
     """Admin sees all reviews from all customers."""
     service = ReviewService(db)
