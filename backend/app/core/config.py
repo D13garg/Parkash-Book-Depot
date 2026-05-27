@@ -1,31 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 from typing import List
-
-
-def parse_allowed_origins(value: str | List[str] | None) -> List[str]:
-    """Parse ALLOWED_ORIGINS from string or list."""
-    
-    if value is None:
-        return [
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "https://parkash-book-depot.vercel.app",
-            "https://parkash-book-depot-nxr52hx3l-dron-gargs-projects.vercel.app",
-        ]
-
-    if isinstance(value, list):
-        return value
-
-    if isinstance(value, str):
-        return [o.strip() for o in value.split(",") if o.strip()]
-
-    return [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "https://parkash-book-depot.vercel.app",
-        "https://parkash-book-depot-nxr52hx3l-dron-gargs-projects.vercel.app",
-    ]
 
 
 class Settings(BaseSettings):
@@ -48,37 +23,48 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = Field(
         ...,
-        description="JWT secret key — must be strong and random in production"
+        description="JWT secret key — generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
     )
-
+    PEPPER: str = Field(
+        ...,
+        description="Password pepper — generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 3
 
     # MongoDB
-    MONGODB_URL: str = Field(
-        ...,
-        description="MongoDB connection URL"
-    )
-
+    MONGODB_URL: str = Field(..., description="MongoDB connection URL")
     MONGODB_DB_NAME: str = "parkash_book_depot"
 
-    # CORS
-    ALLOWED_ORIGINS_STR: str = Field(
-        default=(
-            "http://localhost:5173,"
-            "http://localhost:3000,"
-            "https://parkash-book-depot.vercel.app,"
-            "https://parkash-book-depot-nxr52hx3l-dron-gargs-projects.vercel.app"
-        ),
-        alias="ALLOWED_ORIGINS"
+    # CORS — no defaults, must be explicitly set
+    ALLOWED_ORIGINS: List[str] = Field(
+        default=["http://localhost:5173", "http://localhost:3000"]
     )
 
-    @property
-    def allowed_origins(self) -> List[str]:
-        """Get parsed ALLOWED_ORIGINS list."""
-        return parse_allowed_origins(self.ALLOWED_ORIGINS_STR)
+    # Request limits
+    MAX_REQUEST_SIZE_MB: int = 5
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def secret_key_must_be_strong(cls, v: str) -> str:
+        if len(v) < 32:
+            raise ValueError(
+                "SECRET_KEY must be at least 32 characters. "
+                "Generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        return v
+
+    @field_validator("PEPPER")
+    @classmethod
+    def pepper_must_be_strong(cls, v: str) -> str:
+        if len(v) < 32:
+            raise ValueError(
+                "PEPPER must be at least 32 characters. "
+                "Generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        return v
 
 
-# Single shared instance
+# Single shared instance — import this everywhere
 settings = Settings()

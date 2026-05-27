@@ -12,6 +12,8 @@ asyncpg==0.30.0       # async PostgreSQL driver
 python-jose[cryptography]==3.3.0   # JWT
 passlib[bcrypt]==1.7.4             # password hashing
 bcrypt>=4.0.1,<5.0.0               # bcrypt backend for passlib (v4 for compatibility)
+slowapi==0.1.9                     # rate limiting
+disposable-email-domains==0.0.97   # disposable email blocklist
 
 # Config
 pydantic==2.9.2
