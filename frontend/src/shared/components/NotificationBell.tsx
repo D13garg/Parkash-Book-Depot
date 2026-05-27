@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useNotifications, useMarkRead, useMarkAllRead, useUnreadCount } from "@/shared/hooks/useNotifications"
+import { useNotifications, useMarkRead, useMarkAllRead, useUnreadCount } from "@/shared/hooks/useNotifications.ts"
 
 const TYPE_ICONS: Record<string, string> = {
   request_submitted: "📋",
