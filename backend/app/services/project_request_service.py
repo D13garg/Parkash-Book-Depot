@@ -19,6 +19,7 @@ from app.permissions.project_request_permissions import (
     assert_rejection_has_reason,
 )
 from app.permissions.role_permissions import is_admin
+from app.services.notification_service import notify_all_admins
 
 
 def _to_response(req: ProjectRequestModel) -> ProjectRequestResponse:
@@ -50,7 +51,6 @@ class ProjectRequestService:
         data: CreateProjectRequestRequest,
         current_user: UserModel,
     ) -> ProjectRequestResponse:
-        # Only customers can submit
         assert_can_submit_request(current_user)
 
         doc = data.model_dump()
@@ -58,6 +58,15 @@ class ProjectRequestService:
         doc["status"] = "submitted"
 
         request = await self.repo.create(doc)
+
+        # Notify all admins
+        await notify_all_admins(
+            db=self.repo.collection.database,
+            type="request_submitted",
+            message=f"New project request from {current_user.name}: \"{request.title}\"",
+            link="/admin/requests",
+        )
+
         return _to_response(request)
 
     async def get_requests(
@@ -69,7 +78,6 @@ class ProjectRequestService:
     ) -> PaginatedResponse[ProjectRequestResponse]:
         skip = (page - 1) * page_size
 
-        # Admins see all requests; customers see only their own
         if is_admin(current_user):
             requests, total = await self.repo.find_all(status=status, skip=skip, limit=page_size)
         else:
@@ -91,8 +99,6 @@ class ProjectRequestService:
         request = await self.repo.find_by_id(request_id)
         if not request:
             raise NotFoundException("Project request")
-
-        # Ownership check — customers can only see their own
         assert_can_view_request(current_user, request)
         return _to_response(request)
 
@@ -106,14 +112,12 @@ class ProjectRequestService:
         if not request:
             raise NotFoundException("Project request")
 
-        # State machine — reject invalid transitions
         if not is_valid_request_transition(request.status, data.status):
             raise InvalidStateTransitionException(
                 current=request.status.value,
                 attempted=data.status.value,
             )
 
-        # Rejection must include a reason
         assert_rejection_has_reason(data.status, data.rejection_reason)
 
         update_data = {"status": data.status.value}

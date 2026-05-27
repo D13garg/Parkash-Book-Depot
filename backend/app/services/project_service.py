@@ -28,6 +28,7 @@ from app.core.exceptions import (
 )
 from app.permissions.project_permissions import assert_can_view_project, assert_can_update_project
 from app.permissions.role_permissions import is_admin, is_associate
+from app.services.notification_service import notify
 
 
 def _to_project_response(project: ProjectModel) -> ProjectResponse:
@@ -70,19 +71,16 @@ class ProjectService:
         request_id: str,
         current_user: UserModel,
     ) -> ProjectResponse:
-        # 1. Fetch the original customer request
         request = await self.request_repo.find_by_id(request_id)
         if not request:
             raise NotFoundException("Project request")
 
-        # 2. Can only convert accepted requests
         if request.status != ProjectRequestStatus.ACCEPTED:
             raise BadRequestException(
                 "Only accepted requests can be converted to projects. "
                 f"Current status: {request.status.value}"
             )
 
-        # 3. Create the internal project document
         project_doc = {
             "request_id": request_id,
             "created_by": current_user.id,
@@ -95,13 +93,11 @@ class ProjectService:
         }
         project = await self.project_repo.create(project_doc)
 
-        # 4. Mark the request as converted — links the two documents
         await self.request_repo.update_status(
             request_id,
             {"status": ProjectRequestStatus.CONVERTED_TO_PROJECT.value}
         )
 
-        # 5. Create first timeline entry automatically
         await self.update_repo.create({
             "project_id": project.id,
             "updated_by": current_user.id,
@@ -121,7 +117,6 @@ class ProjectService:
     ) -> PaginatedResponse[ProjectResponse]:
         skip = (page - 1) * page_size
 
-        # Admins see all; associates see only their assigned projects
         if is_admin(current_user):
             projects, total = await self.project_repo.find_all(
                 status=status, skip=skip, limit=page_size
@@ -160,7 +155,6 @@ class ProjectService:
         if not project:
             raise NotFoundException("Project")
 
-        # Can only assign if currently pending or re-assigning
         if project.status not in [ProjectStatus.PENDING, ProjectStatus.ASSIGNED]:
             raise BadRequestException(
                 "Can only assign associates to pending or already-assigned projects."
@@ -177,6 +171,15 @@ class ProjectService:
             "attachments": [],
         })
 
+        # Notify the assigned associate
+        await notify(
+            db=self.project_repo.collection.database,
+            user_id=data.associate_id,
+            type="project_assigned",
+            message=f"You have been assigned to project: \"{project.title}\"",
+            link=f"/associate/projects/{project_id}",
+        )
+
         return _to_project_response(project)
 
     async def update_status(
@@ -189,7 +192,6 @@ class ProjectService:
         if not project:
             raise NotFoundException("Project")
 
-        # State machine enforcement
         if not is_valid_project_transition(project.status, data.status):
             raise InvalidStateTransitionException(
                 current=project.status.value,
@@ -202,7 +204,6 @@ class ProjectService:
 
         project = await self.project_repo.update(project_id, update_data)
 
-        # Log status change in the timeline
         await self.update_repo.create({
             "project_id": project_id,
             "updated_by": current_user.id,
@@ -233,7 +234,6 @@ class ProjectService:
             "attachments": data.attachments,
         }
 
-        # If the associate is also changing the status, validate and apply it
         if data.status_changed_to:
             if not is_valid_project_transition(project.status, data.status_changed_to):
                 raise InvalidStateTransitionException(

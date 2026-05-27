@@ -133,3 +133,14 @@ export interface Review {
   message: string
   created_at: string
 }
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: string
+  message: string
+  link: string | null
+  is_read: boolean
+  created_at: string
+}

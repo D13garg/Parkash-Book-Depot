@@ -3,8 +3,9 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.repositories.review_repository import ReviewRepository
 from app.schemas.review import CreateReviewRequest, ReviewResponse
 from app.models.user import UserModel
-from app.core.exceptions import ForbiddenException, NotFoundException
+from app.core.exceptions import ForbiddenException
 from app.permissions.role_permissions import is_admin
+from app.services.notification_service import notify_all_admins
 
 
 def _to_response(review) -> ReviewResponse:
@@ -34,6 +35,15 @@ class ReviewService:
             "message": data.message,
         }
         review = await self.repo.create(doc)
+
+        # Notify all admins
+        await notify_all_admins(
+            db=self.repo.collection.database,
+            type="review_submitted",
+            message=f"New {data.rating}★ review from {current_user.name}: \"{data.category}\"",
+            link="/admin/reviews",
+        )
+
         return _to_response(review)
 
     async def get_my_reviews(self, current_user: UserModel) -> List[ReviewResponse]:
