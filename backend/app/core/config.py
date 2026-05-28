@@ -16,38 +16,31 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
-
-    # API
     API_V1_PREFIX: str = "/api/v1"
 
     # Security
-    SECRET_KEY: str = Field(
-        ...,
-        description="JWT secret key — generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
-    )
-    PEPPER: str = Field(
-        ...,
-        description="Password pepper — generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
-    )
+    SECRET_KEY: str = Field(...)
+    PEPPER: str = Field(...)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 3
 
     # MongoDB
-    MONGODB_URL: str = Field(..., description="MongoDB connection URL")
+    MONGODB_URL: str = Field(...)
     MONGODB_DB_NAME: str = "parkash_book_depot"
 
-    # CORS — no defaults, must be explicitly set
+    # CORS
     ALLOWED_ORIGINS: List[str] = Field(
-        default=[
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "https://parkash-book-depot.vercel.app"
-        ]
+        default=["http://localhost:5173", "http://localhost:3000"]
     )
 
     # Request limits
     MAX_REQUEST_SIZE_MB: int = 5
+
+    # Cloudinary
+    CLOUDINARY_CLOUD_NAME: str = Field(...)
+    CLOUDINARY_API_KEY: str = Field(...)
+    CLOUDINARY_API_SECRET: str = Field(...)
 
     @field_validator("SECRET_KEY")
     @classmethod
@@ -70,5 +63,4 @@ class Settings(BaseSettings):
         return v
 
 
-# Single shared instance — import this everywhere
 settings = Settings()

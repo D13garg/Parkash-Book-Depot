@@ -3,17 +3,17 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 
 # Database
-motor==3.6.0          # async MongoDB driver
-pymongo>=4.9,<4.10    # Motor dependency (compatible version)
-sqlalchemy==2.0.36    # PostgreSQL ORM (for payments)
-asyncpg==0.30.0       # async PostgreSQL driver
+motor==3.6.0
+pymongo>=4.9,<4.10
+sqlalchemy==2.0.36
+asyncpg==0.30.0
 
 # Auth & security
-python-jose[cryptography]==3.3.0   # JWT
-passlib[bcrypt]==1.7.4             # password hashing
-bcrypt>=4.0.1,<5.0.0               # bcrypt backend for passlib (v4 for compatibility)
-slowapi==0.1.9                     # rate limiting
-disposable-email-domains==0.0.97   # disposable email blocklist
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt>=4.0.1,<5.0.0
+slowapi==0.1.9
+disposable-email-domains==0.0.97
 
 # Config
 pydantic==2.9.2
@@ -21,8 +21,9 @@ pydantic[email]==2.9.2
 pydantic-settings==2.5.2
 
 # Utilities
-python-multipart==0.0.12   # file uploads
-httpx==0.27.2              # async HTTP client (for tests)
+python-multipart==0.0.12
+httpx==0.27.2
+cloudinary==1.41.0
 
 # Testing
 pytest==8.3.3
