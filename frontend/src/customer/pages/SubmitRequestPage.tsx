@@ -16,7 +16,7 @@ const schema = z.object({
   contact_phone:       z.string().optional(),
 })
 
-type FormData = z.infer<typeof schema>
+type FormData = z.input<typeof schema>
 
 export function SubmitRequestPage() {
   const navigate = useNavigate()
