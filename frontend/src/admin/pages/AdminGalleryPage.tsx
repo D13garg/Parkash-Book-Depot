@@ -1,5 +1,11 @@
 import { useState, useRef } from "react"
-import { useGallery, useAddGalleryItem, useUpdateCaption, useDeleteGalleryItem } from "@/shared/hooks/useGallery"
+import {
+  useGallery,
+  useAddGalleryItem,
+  useUpdateCaption,
+  useDeleteGalleryItem,
+} from "@/shared/hooks/useGallery"
+
 import { LoadingSpinner } from "@/shared/components/LoadingSpinner"
 import { EmptyState } from "@/shared/components/EmptyState"
 
@@ -8,7 +14,12 @@ const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
 export function AdminGalleryPage() {
   const { data: items, isLoading } = useGallery()
-  const { mutate: addItem, isPending: isUploading } = useAddGalleryItem()
+
+  const {
+    mutate: addItem,
+    isPending: isUploading,
+  } = useAddGalleryItem()
+
   const { mutate: updateCaption } = useUpdateCaption()
   const { mutate: deleteItem } = useDeleteGalleryItem()
 
@@ -16,38 +27,65 @@ export function AdminGalleryPage() {
   const [uploadCaption, setUploadCaption] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editCaption, setEditCaption] = useState("")
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Combined loading state
+  const isBusy = uploading || isUploading
+
+  const handleFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0]
+
     if (!file) return
 
-    setUploading(true)
     try {
-      // Upload directly to Cloudinary from browser
+      setUploading(true)
+
+      // Upload to Cloudinary
       const formData = new FormData()
       formData.append("file", file)
       formData.append("upload_preset", UPLOAD_PRESET)
       formData.append("folder", "parkash_gallery")
 
-      const res = await fetch(
+      const response = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        { method: "POST", body: formData }
+        {
+          method: "POST",
+          body: formData,
+        }
       )
-      const data = await res.json()
 
-      if (!data.secure_url) throw new Error("Upload failed")
+      const data = await response.json()
 
-      // Save URL + caption to our backend
-      addItem({
-        image_url: data.secure_url,
-        public_id: data.public_id,
-        caption: uploadCaption || undefined,
-      })
+      if (!response.ok || !data.secure_url) {
+        throw new Error("Cloudinary upload failed")
+      }
 
-      setUploadCaption("")
-      if (fileInputRef.current) fileInputRef.current.value = ""
-    } catch (err) {
+      // Save to backend
+      addItem(
+        {
+          image_url: data.secure_url,
+          public_id: data.public_id,
+          caption: uploadCaption || undefined,
+        },
+        {
+          onSuccess: () => {
+            setUploadCaption("")
+
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ""
+            }
+          },
+
+          onError: () => {
+            alert("Failed to save image.")
+          },
+        }
+      )
+    } catch (error) {
+      console.error(error)
       alert("Upload failed. Please try again.")
     } finally {
       setUploading(false)
@@ -56,52 +94,83 @@ export function AdminGalleryPage() {
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground">Project Gallery</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          Project Gallery
+        </h2>
+
         <p className="text-sm text-muted-foreground mt-1">
           Upload photos visible to all customers.
         </p>
       </div>
 
-      {/* Upload section */}
+      {/* Upload Section */}
       <div className="bg-card border border-border rounded-xl p-6 mb-6">
-        <h3 className="font-semibold text-foreground mb-4">Upload New Photo</h3>
+        <h3 className="font-semibold text-foreground mb-4">
+          Upload New Photo
+        </h3>
+
         <div className="space-y-3">
+          {/* File Input */}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            disabled={uploading}
-            className="block w-full text-sm text-muted-foreground
-              file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
-              file:text-sm file:font-medium file:bg-primary file:text-primary-foreground
-              hover:file:bg-primary/90 file:cursor-pointer disabled:opacity-50"
+            disabled={isBusy}
+            className="
+              block w-full text-sm text-muted-foreground
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-lg file:border-0
+              file:text-sm file:font-medium
+              file:bg-primary file:text-primary-foreground
+              hover:file:bg-primary/90
+              file:cursor-pointer
+              disabled:opacity-50
+            "
           />
+
+          {/* Caption Input */}
           <input
+            type="text"
             value={uploadCaption}
             onChange={(e) => setUploadCaption(e.target.value)}
             placeholder="Add a caption (optional)..."
-            disabled={uploading}
-            className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            disabled={isBusy}
+            className="
+              w-full px-3 py-2.5 rounded-lg
+              border border-input
+              bg-background text-sm
+              focus:outline-none focus:ring-2 focus:ring-ring
+              disabled:opacity-50
+            "
           />
-          {uploading && (
+
+          {/* Loading */}
+          {isBusy && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <LoadingSpinner size="sm" />
-              Uploading photo...
+
+              {uploading
+                ? "Uploading image..."
+                : "Saving to database..."}
             </div>
           )}
         </div>
+
         <p className="text-xs text-muted-foreground mt-3">
           Supports JPG, PNG, WEBP. Select a file to upload instantly.
-          Works from phone gallery or computer storage.
         </p>
       </div>
 
-      {/* Gallery grid */}
+      {/* Gallery */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
-          <LoadingSpinner size="lg" text="Loading gallery..." />
+          <LoadingSpinner
+            size="lg"
+            text="Loading gallery..."
+          />
         </div>
       ) : items?.length === 0 ? (
         <EmptyState
@@ -126,45 +195,75 @@ export function AdminGalleryPage() {
                 />
               </div>
 
-              {/* Caption + controls */}
+              {/* Content */}
               <div className="p-4 space-y-3">
+                {/* Edit Mode */}
                 {editingId === item.id ? (
                   <div className="flex gap-2">
                     <input
                       value={editCaption}
-                      onChange={(e) => setEditCaption(e.target.value)}
-                      className="flex-1 px-2 py-1.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      onChange={(e) =>
+                        setEditCaption(e.target.value)
+                      }
                       placeholder="Enter caption..."
                       autoFocus
+                      className="
+                        flex-1 px-2 py-1.5 rounded-lg
+                        border border-input
+                        bg-background text-sm
+                        focus:outline-none focus:ring-2 focus:ring-ring
+                      "
                     />
+
                     <button
                       onClick={() => {
-                        updateCaption({ id: item.id, caption: editCaption })
+                        updateCaption({
+                          id: item.id,
+                          caption: editCaption,
+                        })
+
                         setEditingId(null)
                       }}
-                      className="px-3 py-1.5 bg-primary text-primary-foreground text-xs rounded-lg hover:bg-primary/90 transition-colors"
+                      className="
+                        px-3 py-1.5 rounded-lg
+                        bg-primary text-primary-foreground
+                        text-xs hover:bg-primary/90
+                      "
                     >
                       Save
                     </button>
+
                     <button
                       onClick={() => setEditingId(null)}
-                      className="px-3 py-1.5 border border-border text-xs rounded-lg hover:bg-muted transition-colors"
+                      className="
+                        px-3 py-1.5 rounded-lg
+                        border border-border
+                        text-xs hover:bg-muted
+                      "
                     >
                       Cancel
                     </button>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground min-h-[20px]">
-                    {item.caption ?? (
-                      <span className="italic text-muted-foreground/60">No caption</span>
+                    {item.caption ? (
+                      item.caption
+                    ) : (
+                      <span className="italic text-muted-foreground/60">
+                        No caption
+                      </span>
                     )}
                   </p>
                 )}
 
+                {/* Footer */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
-                    {new Date(item.created_at).toLocaleDateString()}
+                    {new Date(
+                      item.created_at
+                    ).toLocaleDateString()}
                   </span>
+
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -175,9 +274,16 @@ export function AdminGalleryPage() {
                     >
                       ✏️ Caption
                     </button>
+
                     <button
                       onClick={() => {
-                        if (confirm("Delete this photo?")) deleteItem(item.id)
+                        const confirmed = confirm(
+                          "Delete this photo?"
+                        )
+
+                        if (confirmed) {
+                          deleteItem(item.id)
+                        }
                       }}
                       className="text-xs text-destructive hover:underline"
                     >
