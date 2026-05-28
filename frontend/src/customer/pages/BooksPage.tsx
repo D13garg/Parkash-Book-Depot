@@ -125,24 +125,21 @@ export function BooksPage() {
                     {book.title}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {book.authors.join(", ")}
+                    {book.authors.join(", ") || "Unknown Author"}
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-base font-bold text-primary">
-                    ₹{book.price.toFixed(2)}
+                    {book.price ? `₹${book.price.toFixed(2)}` : "Price unavailable"}
                   </span>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    book.stock > 0
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}>
-                    {book.stock > 0 ? `${book.stock} in stock` : "Out of stock"}
-                  </span>
+                    (book.stock ?? 0) > 0 ? "bg-green-100 text-green-700": "bg-gray-200 text-gray-700"}`}>
+                      {book.stock != null ? `${book.stock} in stock` : "Stock unknown"}
+                      </span>
                 </div>
 
-                {book.categories.length > 0 && (
+                {book.categories?.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {book.categories.slice(0, 2).map((cat) => (
                       <span
