@@ -29,6 +29,7 @@ def _to_response(req: ProjectRequestModel) -> ProjectRequestResponse:
         title=req.title,
         description=req.description,
         category=req.category,
+        request_type=req.request_type,
         requirements=req.requirements,
         quantity=req.quantity,
         institution_name=req.institution_name,
@@ -59,11 +60,10 @@ class ProjectRequestService:
 
         request = await self.repo.create(doc)
 
-        # Notify all admins
         await notify_all_admins(
             db=self.repo.collection.database,
             type="request_submitted",
-            message=f"New project request from {current_user.name}: \"{request.title}\"",
+            message=f"New {data.request_type} request from {current_user.name}: \"{request.title}\"",
             link="/admin/requests",
         )
 
@@ -75,13 +75,21 @@ class ProjectRequestService:
         page: int = 1,
         page_size: int = 20,
         status: Optional[str] = None,
+        request_type: Optional[str] = None,
     ) -> PaginatedResponse[ProjectRequestResponse]:
         skip = (page - 1) * page_size
 
         if is_admin(current_user):
-            requests, total = await self.repo.find_all(status=status, skip=skip, limit=page_size)
+            requests, total = await self.repo.find_all(
+                status=status,
+                request_type=request_type,
+                skip=skip,
+                limit=page_size
+            )
         else:
-            requests, total = await self.repo.find_by_customer(current_user.id, skip=skip, limit=page_size)
+            requests, total = await self.repo.find_by_customer(
+                current_user.id, skip=skip, limit=page_size
+            )
 
         return PaginatedResponse(
             items=[_to_response(r) for r in requests],

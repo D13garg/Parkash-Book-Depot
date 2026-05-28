@@ -1,15 +1,14 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 from app.core.enums import ProjectRequestStatus
 
-
-# ── Request schemas ────────────────────────────────────────────────────────────
 
 class CreateProjectRequestRequest(BaseModel):
     title: str = Field(..., min_length=3, max_length=200)
     description: str = Field(..., min_length=10)
     category: str = Field(..., min_length=2)
+    request_type: Literal["project", "other"] = "project"
     requirements: Optional[str] = None
     quantity: Optional[int] = Field(default=None, gt=0)
     institution_name: Optional[str] = None
@@ -18,13 +17,10 @@ class CreateProjectRequestRequest(BaseModel):
 
 
 class UpdateRequestStatusRequest(BaseModel):
-    """Used by admin to move a request through the workflow."""
     status: ProjectRequestStatus
     admin_notes: Optional[str] = None
-    rejection_reason: Optional[str] = None     # required when rejecting
+    rejection_reason: Optional[str] = None
 
-
-# ── Response schemas ───────────────────────────────────────────────────────────
 
 class ProjectRequestResponse(BaseModel):
     id: str
@@ -32,6 +28,7 @@ class ProjectRequestResponse(BaseModel):
     title: str
     description: str
     category: str
+    request_type: str
     requirements: Optional[str] = None
     quantity: Optional[int] = None
     institution_name: Optional[str] = None

@@ -43,12 +43,15 @@ class ProjectRequestRepository:
         self,
         *,
         status: Optional[str] = None,
+        request_type: Optional[str] = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[ProjectRequestModel], int]:
         query = {}
         if status:
             query["status"] = status
+        if request_type:
+            query["request_type"] = request_type
         total = await self.collection.count_documents(query)
         cursor = self.collection.find(query).sort("created_at", -1).skip(skip).limit(limit)
         docs = await cursor.to_list(length=limit)

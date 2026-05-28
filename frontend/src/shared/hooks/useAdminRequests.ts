@@ -1,16 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import api from "@/lib/axios"
-import type { PaginatedResponse, ProjectRequest, ProjectRequestStatus } from "@/shared/types"
+import type { PaginatedResponse, ProjectRequest, ProjectRequestStatus, Project } from "@/shared/types"
 
-export function useAdminRequests(page = 1, pageSize = 20, status?: string) {
+export function useAdminRequests(
+  page = 1,
+  pageSize = 20,
+  status?: string,
+  requestType?: string,
+) {
   return useQuery({
-    queryKey: ["project-requests", "admin", page, pageSize, status],
+    queryKey: ["admin-requests", page, pageSize, status, requestType],
     queryFn: async () => {
       const res = await api.get<PaginatedResponse<ProjectRequest>>("/project-requests", {
         params: {
           page,
           page_size: pageSize,
           ...(status && { status }),
+          ...(requestType && { request_type: requestType }),
         },
       })
       return res.data
@@ -20,7 +26,6 @@ export function useAdminRequests(page = 1, pageSize = 20, status?: string) {
 
 export function useUpdateRequestStatus() {
   const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: async ({
       requestId,
@@ -33,14 +38,29 @@ export function useUpdateRequestStatus() {
       admin_notes?: string
       rejection_reason?: string
     }) => {
-      const res = await api.patch<ProjectRequest>(
-        `/project-requests/${requestId}/status`,
-        { status, admin_notes, rejection_reason }
-      )
+      const res = await api.patch(`/project-requests/${requestId}/status`, {
+        status,
+        admin_notes,
+        rejection_reason,
+      })
       return res.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["project-requests"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-requests"] })
+    },
+  })
+}
+
+export function useConvertToProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const res = await api.post<Project>(`/projects/from-request/${requestId}`)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-requests"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-projects"] })
     },
   })
 }

@@ -74,6 +74,7 @@ export interface ProjectRequest {
   title: string
   description: string
   category: string
+  request_type: string 
   requirements: string | null
   quantity: number | null
   institution_name: string | null
