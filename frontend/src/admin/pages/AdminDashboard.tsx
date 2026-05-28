@@ -6,12 +6,14 @@ import { AdminProjectDetailPage }  from "./AdminProjectDetailPage"
 import { BookManagementPage }      from "./BookManagementPage"
 import { AddBookPage }             from "./AddBookPage"
 import { AdminReviewsPage }        from "./AdminReviewsPage"
+import { AdminGalleryPage }        from "./AdminGalleryPage"
 
 const NAV_ITEMS = [
   { label: "Request Queue", path: "/admin/requests", icon: "📋" },
   { label: "All Projects",  path: "/admin/projects", icon: "📂" },
   { label: "Books",         path: "/admin/books",    icon: "📚" },
   { label: "Reviews",       path: "/admin/reviews",  icon: "⭐" },
+  { label: "Gallery",       path: "/admin/gallery",  icon: "🖼️" },
   { label: "Profile",       path: "/admin/profile",  icon: "👤" },
 ]
 
@@ -26,6 +28,7 @@ export function AdminDashboard() {
         <Route path="books"               element={<BookManagementPage />} />
         <Route path="books/add"           element={<AddBookPage />} />
         <Route path="reviews"             element={<AdminReviewsPage />} />
+        <Route path="gallery"             element={<AdminGalleryPage />} />
       </Routes>
     </DashboardLayout>
   )

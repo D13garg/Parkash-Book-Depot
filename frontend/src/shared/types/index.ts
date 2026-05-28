@@ -144,3 +144,14 @@ export interface Notification {
   is_read: boolean
   created_at: string
 }
+// ── Gallery ───────────────────────────────────────────────────────────────────
+
+export interface GalleryItem {
+  id: string
+  image_url: string
+  public_id: string
+  caption: string | null
+  uploaded_by: string
+  uploaded_by_name: string
+  created_at: string
+}
