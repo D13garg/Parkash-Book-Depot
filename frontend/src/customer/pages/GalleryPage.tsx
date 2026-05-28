@@ -39,14 +39,13 @@ export function GalleryPage() {
               key={item.id}
               className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="aspect-video bg-muted">
-                <img
-                  src={item.image_url}
-                  alt={item.caption ?? "Gallery photo"}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
+              <div className="bg-muted flex items-center justify-center overflow-hidden rounded-t-xl">
+                 <img src={item.image_url}
+                 alt={item.caption ?? "Gallery photo"}
+                 className="w-full h-auto object-contain max-h-72"
+                 loading="lazy"/>
+                 </div>
+
               {item.caption && (
                 <div className="px-4 py-3">
                   <p className="text-sm text-foreground">{item.caption}</p>

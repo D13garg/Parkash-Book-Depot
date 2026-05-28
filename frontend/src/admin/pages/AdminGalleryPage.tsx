@@ -186,13 +186,11 @@ export function AdminGalleryPage() {
               className="bg-card border border-border rounded-xl overflow-hidden"
             >
               {/* Image */}
-              <div className="aspect-video bg-muted">
-                <img
-                  src={item.image_url}
-                  alt={item.caption ?? "Gallery photo"}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+              <div className="bg-muted flex items-center justify-center overflow-hidden rounded-t-xl">
+                <img src={item.image_url}
+                alt={item.caption ?? "Gallery photo"}
+                className="w-full h-auto object-contain max-h-72"
+                loading="lazy"/>
               </div>
 
               {/* Content */}
