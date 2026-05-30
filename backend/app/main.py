@@ -9,6 +9,7 @@ from app.core.create_indexes import create_indexes
 from app.api.v1.router import api_router
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware, RequestSizeLimitMiddleware
+from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestSizeLimitMiddleware)
+    app.add_middleware(ErrorHandlerMiddleware)
     app.add_middleware(LoggingMiddleware)
 
     # ── Routers ─────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from app.core.enums import UserRole
 from app.models.user import UserModel
 from app.services.audit_log_service import audit
+from app.services.error_log_service import log_error
 
 
 def _to_user_response(user: UserModel) -> UserResponse:
@@ -59,6 +60,10 @@ class AuthService:
                 actor_role="unknown", action="user_login_failed",
                 description=f"Failed login attempt for email: {data.email}",
                 metadata={"reason": "user_not_found"},
+            )
+            await log_error(
+                db=self.db, message=f"Failed login - user not found: {data.email}",
+                level="WARNING", endpoint="/auth/login", method="POST", status_code=401,
             )
             raise UnauthorizedException("Invalid email or password.")
         if not verify_password(data.password, user.hashed_password):
