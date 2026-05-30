@@ -156,3 +156,18 @@ export interface GalleryItem {
   uploaded_by_name: string
   created_at: string
 }
+// ── Audit Logs ────────────────────────────────────────────────────────────────
+
+export interface AuditLog {
+  id: string
+  actor_id: string
+  actor_name: string
+  actor_role: string
+  action: string
+  entity_type: string | null
+  entity_id: string | null
+  description: string
+  metadata: Record<string, any> | null
+  ip_address: string | null
+  created_at: string
+}

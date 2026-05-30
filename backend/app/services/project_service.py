@@ -29,6 +29,7 @@ from app.core.exceptions import (
 from app.permissions.project_permissions import assert_can_view_project, assert_can_update_project
 from app.permissions.role_permissions import is_admin, is_associate
 from app.services.notification_service import notify
+from app.services.audit_log_service import audit
 
 
 def _to_project_response(project: ProjectModel) -> ProjectResponse:
@@ -106,6 +107,14 @@ class ProjectService:
             "attachments": [],
         })
 
+        await audit(
+            db=self.project_repo.collection.database,
+            actor_id=current_user.id, actor_name=current_user.name,
+            actor_role=current_user.role, action="project_created",
+            description=f"Project created from request: \"{project.title}\"",
+            entity_type="project", entity_id=project.id,
+            metadata={"request_id": request_id},
+        )
         return _to_project_response(project)
 
     async def get_projects(
@@ -180,6 +189,14 @@ class ProjectService:
             link=f"/associate/projects/{project_id}",
         )
 
+        await audit(
+            db=self.project_repo.collection.database,
+            actor_id=current_user.id, actor_name=current_user.name,
+            actor_role=current_user.role, action="project_assigned",
+            description=f"Project \"{project.title}\" assigned to associate",
+            entity_type="project", entity_id=project_id,
+            metadata={"associate_id": data.associate_id},
+        )
         return _to_project_response(project)
 
     async def update_status(

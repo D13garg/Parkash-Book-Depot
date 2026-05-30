@@ -20,6 +20,7 @@ from app.permissions.project_request_permissions import (
 )
 from app.permissions.role_permissions import is_admin
 from app.services.notification_service import notify_all_admins
+from app.services.audit_log_service import audit
 
 
 def _to_response(req: ProjectRequestModel) -> ProjectRequestResponse:
@@ -67,6 +68,14 @@ class ProjectRequestService:
             link="/admin/requests",
         )
 
+        await audit(
+            db=self.repo.collection.database,
+            actor_id=current_user.id, actor_name=current_user.name,
+            actor_role=current_user.role, action="request_submitted",
+            description=f"Project request submitted: \"{request.title}\"",
+            entity_type="project_request", entity_id=request.id,
+            metadata={"category": request.category, "request_type": request.request_type},
+        )
         return _to_response(request)
 
     async def get_requests(
@@ -135,4 +144,12 @@ class ProjectRequestService:
             update_data["rejection_reason"] = data.rejection_reason
 
         updated = await self.repo.update_status(request_id, update_data)
+        await audit(
+            db=self.repo.collection.database,
+            actor_id=current_user.id, actor_name=current_user.name,
+            actor_role=current_user.role, action="request_status_changed",
+            description=f"Request status changed to '{data.status.value}': \"{updated.title}\"",
+            entity_type="project_request", entity_id=request_id,
+            metadata={"new_status": data.status.value, "admin_notes": data.admin_notes},
+        )
         return _to_response(updated)

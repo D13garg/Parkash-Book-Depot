@@ -8,7 +8,6 @@ Checks beyond basic format:
 """
 
 from typing import Optional
-
 # Disposable email domains — blocked
 try:
     from disposable_email_domains import blocklist as DISPOSABLE_DOMAINS

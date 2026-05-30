@@ -7,6 +7,7 @@ import { BookManagementPage }      from "./BookManagementPage"
 import { AddBookPage }             from "./AddBookPage"
 import { AdminReviewsPage }        from "./AdminReviewsPage"
 import { AdminGalleryPage }        from "./AdminGalleryPage"
+import { AdminAuditLogsPage }     from "./AdminAuditLogsPage"
 
 const NAV_ITEMS = [
   { label: "Request Queue", path: "/admin/requests", icon: "📋" },
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
   { label: "Books",         path: "/admin/books",    icon: "📚" },
   { label: "Reviews",       path: "/admin/reviews",  icon: "⭐" },
   { label: "Gallery",       path: "/admin/gallery",  icon: "🖼️" },
+  { label: "Activity Logs", path: "/admin/audit-logs", icon: "📋" },
   { label: "Profile",       path: "/admin/profile",  icon: "👤" },
 ]
 
@@ -29,6 +31,7 @@ export function AdminDashboard() {
         <Route path="books/add"           element={<AddBookPage />} />
         <Route path="reviews"             element={<AdminReviewsPage />} />
         <Route path="gallery"             element={<AdminGalleryPage />} />
+        <Route path="audit-logs"         element={<AdminAuditLogsPage />} />
       </Routes>
     </DashboardLayout>
   )
