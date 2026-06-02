@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useErrorLogs } from "@/shared/hooks/useErrorLogs"
+import { useErrorLogs } from "@/shared/hooks/useErrorLogs.ts"
 import { LoadingSpinner } from "@/shared/components/LoadingSpinner"
 import { EmptyState } from "@/shared/components/EmptyState"
 import { Pagination } from "@/shared/components/Pagination"
