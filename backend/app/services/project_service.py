@@ -30,6 +30,7 @@ from app.permissions.project_permissions import assert_can_view_project, assert_
 from app.permissions.role_permissions import is_admin, is_associate
 from app.services.notification_service import notify
 from app.services.audit_log_service import audit
+from app.services.metrics_service import increment as inc_metric
 
 
 def _to_project_response(project: ProjectModel) -> ProjectResponse:
@@ -115,6 +116,7 @@ class ProjectService:
             entity_type="project", entity_id=project.id,
             metadata={"request_id": request_id},
         )
+        await inc_metric(self.project_repo.collection.database, "projects_created")
         return _to_project_response(project)
 
     async def get_projects(

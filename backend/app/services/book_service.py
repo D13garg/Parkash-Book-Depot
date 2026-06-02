@@ -7,6 +7,7 @@ from app.models.book import BookModel
 from app.models.user import UserModel
 from app.core.exceptions import NotFoundException
 from app.services.audit_log_service import audit
+from app.services.metrics_service import increment as inc_metric
 
 
 def _to_book_response(book: BookModel) -> BookResponse:
@@ -55,6 +56,7 @@ class BookService:
             entity_type="book", entity_id=book.id,
             metadata={"title": book.title, "price": book.price, "stock": book.stock},
         )
+        await inc_metric(self.db, "books_added")
         return _to_book_response(book)
 
     async def update_book(self, book_id: str, data: UpdateBookRequest, current_user: UserModel) -> BookResponse:

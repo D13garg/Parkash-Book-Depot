@@ -8,6 +8,7 @@ from app.core.enums import UserRole
 from app.models.user import UserModel
 from app.services.audit_log_service import audit
 from app.services.error_log_service import log_error
+from app.services.metrics_service import increment as inc_metric
 
 
 def _to_user_response(user: UserModel) -> UserResponse:
@@ -49,6 +50,7 @@ class AuthService:
             description=f"New customer account registered: {user.email}",
             entity_type="user", entity_id=user.id,
         )
+        await inc_metric(self.db, "new_users")
         tokens = _make_tokens(user)
         return TokenResponse(**tokens, user=_to_user_response(user))
 
@@ -65,6 +67,7 @@ class AuthService:
                 db=self.db, message=f"Failed login - user not found: {data.email}",
                 level="WARNING", endpoint="/auth/login", method="POST", status_code=401,
             )
+            await inc_metric(self.db, "logins_failed")
             raise UnauthorizedException("Invalid email or password.")
         if not verify_password(data.password, user.hashed_password):
             await audit(
@@ -74,9 +77,11 @@ class AuthService:
                 entity_type="user", entity_id=user.id,
                 metadata={"reason": "wrong_password"},
             )
+            await inc_metric(self.db, "logins_failed")
             raise UnauthorizedException("Invalid email or password.")
         if not user.is_active:
             raise UnauthorizedException("Your account has been deactivated.")
+        await inc_metric(self.db, "logins_success")
         tokens = _make_tokens(user)
         return TokenResponse(**tokens, user=_to_user_response(user))
 

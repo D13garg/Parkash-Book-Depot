@@ -21,6 +21,7 @@ from app.permissions.project_request_permissions import (
 from app.permissions.role_permissions import is_admin
 from app.services.notification_service import notify_all_admins
 from app.services.audit_log_service import audit
+from app.services.metrics_service import increment as inc_metric
 
 
 def _to_response(req: ProjectRequestModel) -> ProjectRequestResponse:
@@ -76,6 +77,7 @@ class ProjectRequestService:
             entity_type="project_request", entity_id=request.id,
             metadata={"category": request.category, "request_type": request.request_type},
         )
+        await inc_metric(self.repo.collection.database, "requests_submitted")
         return _to_response(request)
 
     async def get_requests(

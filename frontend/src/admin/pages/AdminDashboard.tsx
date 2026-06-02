@@ -9,6 +9,7 @@ import { AdminReviewsPage }        from "./AdminReviewsPage"
 import { AdminGalleryPage }        from "./AdminGalleryPage"
 import { AdminAuditLogsPage }     from "./AdminAuditLogsPage"
 import { AdminErrorLogsPage }     from "./AdminErrorLogsPage"
+import { AdminMetricsDashboard }  from "./AdminMetricsDashboard"
 
 const NAV_ITEMS = [
   { label: "Request Queue", path: "/admin/requests", icon: "📋" },
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { label: "Gallery",       path: "/admin/gallery",  icon: "🖼️" },
   { label: "Activity Logs", path: "/admin/audit-logs",  icon: "📋" },
   { label: "Error Logs",     path: "/admin/error-logs",  icon: "🔴" },
+  { label: "Metrics",       path: "/admin/metrics",     icon: "📊" },
   { label: "Profile",       path: "/admin/profile",  icon: "👤" },
 ]
 
@@ -35,6 +37,7 @@ export function AdminDashboard() {
         <Route path="gallery"             element={<AdminGalleryPage />} />
         <Route path="audit-logs"         element={<AdminAuditLogsPage />} />
         <Route path="error-logs"          element={<AdminErrorLogsPage />} />
+        <Route path="metrics"             element={<AdminMetricsDashboard />} />
       </Routes>
     </DashboardLayout>
   )

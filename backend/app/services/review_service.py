@@ -6,6 +6,7 @@ from app.models.user import UserModel
 from app.core.exceptions import ForbiddenException
 from app.permissions.role_permissions import is_admin
 from app.services.notification_service import notify_all_admins
+from app.services.metrics_service import increment as inc_metric
 
 
 def _to_response(review) -> ReviewResponse:
@@ -44,6 +45,7 @@ class ReviewService:
             link="/admin/reviews",
         )
 
+        await inc_metric(self.repo.collection.database, "reviews_submitted")
         return _to_response(review)
 
     async def get_my_reviews(self, current_user: UserModel) -> List[ReviewResponse]:

@@ -34,6 +34,12 @@ async def log_error(
         })
     except Exception:
         pass
+    # increment error metric silently
+    try:
+        from app.services.metrics_service import increment as inc_metric
+        await inc_metric(db, "errors_count")
+    except Exception:
+        pass
 
 
 def _to_response(log) -> ErrorLogResponse:
