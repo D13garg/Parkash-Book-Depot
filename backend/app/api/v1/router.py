@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     health, auth, books, project_requests,
     projects, reviews, notifications, gallery,
-    users, audit_logs, error_logs, metrics
+    users, audit_logs, error_logs, metrics, analytics
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -19,3 +19,4 @@ api_router.include_router(gallery.router,          prefix="/gallery",          t
 api_router.include_router(audit_logs.router,       prefix="/audit-logs",       tags=["Audit Logs"])
 api_router.include_router(error_logs.router,       prefix="/error-logs",       tags=["Error Logs"])
 api_router.include_router(metrics.router,          prefix="/metrics",          tags=["Metrics"])
+api_router.include_router(analytics.router,        prefix="/analytics",        tags=["Analytics"])

@@ -1,230 +1,341 @@
-# 📚 Parkash Book Depot
+# Parkash Book Depot — Full Stack Platform
 
-A full-stack project management platform for Parkash Book Depot, enabling customers to submit project requests, associates to manage and update assigned projects, and admins to oversee the entire workflow — all through a clean, role-based interface.
+A production-grade bookstore management system combining inventory management, customer project requests, internal operations, and full observability.
+
+**Live:** [parkash-book-depot.vercel.app](https://parkash-book-depot.vercel.app) | **API:** Railway.app
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
-|---|---|
-| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS |
-| **State Management** | Zustand, TanStack Query (React Query v5) |
-| **Forms & Validation** | React Hook Form, Zod |
-| **Backend** | FastAPI (Python), Uvicorn |
-| **Primary Database** | MongoDB (via Motor — async driver) |
-| **Auth** | JWT (access + refresh tokens), bcrypt |
-| **HTTP Client** | Axios |
-| **Routing** | React Router v7 |
+|-------|-----------|
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
+| State | Zustand, TanStack Query v5 |
+| Backend | Python, FastAPI, Pydantic |
+| Database | MongoDB (Motor async driver) |
+| Auth | JWT (access + refresh tokens), bcrypt + pepper |
+| Storage | Cloudinary (gallery images) |
+| Deploy | Vercel (frontend), Railway (backend) |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Parkash-Book-Depot/
+├── docker-compose.yml
 ├── backend/
-│   ├── app/
-│   │   ├── api/v1/endpoints/   # Route handlers (auth, books, projects, requests)
-│   │   ├── core/               # Config, DB connection, enums, security
-│   │   ├── dependencies/       # FastAPI dependency injection (auth, DB)
-│   │   ├── middleware/         # Logging middleware
-│   │   ├── models/             # MongoDB document models
-│   │   ├── permissions/        # Role-based access control logic
-│   │   ├── repositories/       # DB query layer
-│   │   ├── schemas/            # Pydantic request/response schemas
-│   │   └── services/           # Business logic layer
-│   ├── scripts/
-│   │   ├── seed_admin.py       # Create initial admin account
-│   │   └── create_associates.py
+│   ├── main.py                          # uvicorn entry point
 │   ├── requirements.txt
 │   ├── .env.example
-│   └── main.py
-│
+│   ├── Dockerfile
+│   ├── pytest.ini
+│   ├── scripts/
+│   │   ├── seed_admin.py               # create first admin account
+│   │   └── create_associates.py        # create associate accounts
+│   ├── tests/
+│   │   └── unit/
+│   │       ├── test_security.py
+│   │       ├── test_state_machines.py
+│   │       └── test_permissions.py
+│   └── app/
+│       ├── main.py                      # FastAPI app factory
+│       ├── core/
+│       │   ├── config.py               # settings + env vars
+│       │   ├── database.py             # MongoDB connection
+│       │   ├── security.py             # JWT, bcrypt + pepper
+│       │   ├── enums.py                # roles, statuses, state machines
+│       │   ├── exceptions.py           # custom HTTP exceptions
+│       │   ├── email_validation.py     # Level A email validation
+│       │   └── create_indexes.py       # MongoDB indexes + TTL
+│       ├── models/                      # MongoDB document shapes
+│       │   ├── user.py
+│       │   ├── book.py
+│       │   ├── project_request.py
+│       │   ├── project.py
+│       │   ├── project_update.py
+│       │   ├── review.py
+│       │   ├── gallery.py
+│       │   ├── notification.py
+│       │   ├── audit_log.py
+│       │   ├── error_log.py
+│       │   └── metrics.py
+│       ├── schemas/                     # API request/response shapes
+│       │   ├── user.py
+│       │   ├── book.py
+│       │   ├── project_request.py
+│       │   ├── project.py
+│       │   ├── review.py
+│       │   ├── gallery.py
+│       │   ├── notification.py
+│       │   ├── audit_log.py
+│       │   ├── error_log.py
+│       │   ├── metrics.py
+│       │   └── analytics.py
+│       ├── repositories/                # MongoDB queries only
+│       │   ├── user_repository.py
+│       │   ├── book_repository.py
+│       │   ├── project_request_repository.py
+│       │   ├── project_repository.py
+│       │   ├── project_update_repository.py
+│       │   ├── review_repository.py
+│       │   ├── gallery_repository.py
+│       │   ├── notification_repository.py
+│       │   ├── audit_log_repository.py
+│       │   ├── error_log_repository.py
+│       │   └── metrics_repository.py
+│       ├── services/                    # business logic
+│       │   ├── auth_service.py
+│       │   ├── book_service.py
+│       │   ├── project_request_service.py
+│       │   ├── project_service.py
+│       │   ├── review_service.py
+│       │   ├── gallery_service.py
+│       │   ├── notification_service.py
+│       │   ├── audit_log_service.py
+│       │   ├── error_log_service.py
+│       │   ├── metrics_service.py
+│       │   └── analytics_service.py
+│       ├── permissions/                 # RBAC + ownership guards
+│       │   ├── role_permissions.py
+│       │   ├── project_permissions.py
+│       │   └── project_request_permissions.py
+│       ├── dependencies/
+│       │   ├── database.py             # get_db()
+│       │   └── auth.py                 # get_current_user, role guards
+│       ├── middleware/
+│       │   ├── logging.py
+│       │   ├── security_headers.py
+│       │   ├── rate_limit.py
+│       │   └── error_handler.py
+│       └── api/v1/
+│           ├── router.py               # all routers registered here
+│           └── endpoints/
+│               ├── health.py
+│               ├── auth.py
+│               ├── users.py
+│               ├── books.py
+│               ├── project_requests.py
+│               ├── projects.py
+│               ├── reviews.py
+│               ├── gallery.py
+│               ├── notifications.py
+│               ├── audit_logs.py
+│               ├── error_logs.py
+│               ├── metrics.py
+│               └── analytics.py
 └── frontend/
+    ├── index.html
+    ├── package.json
+    ├── vite.config.ts
+    ├── tailwind.config.js
+    ├── tsconfig.json
+    ├── vercel.json
+    ├── Dockerfile
     └── src/
-        ├── admin/              # Admin pages & components
-        ├── associate/          # Associate pages & components
-        ├── customer/           # Customer pages & components
-        ├── auth/               # Login & Register pages
+        ├── main.tsx
+        ├── App.tsx
+        ├── index.css
+        ├── auth/pages/
+        │   ├── LoginPage.tsx
+        │   └── RegisterPage.tsx
+        ├── customer/pages/
+        │   ├── CustomerDashboard.tsx
+        │   ├── BooksPage.tsx
+        │   ├── MyRequestsPage.tsx
+        │   ├── SubmitRequestPage.tsx
+        │   ├── MyReviewPage.tsx
+        │   ├── SubmitReviewPage.tsx
+        │   ├── GalleryPage.tsx
+        │   ├── ContactUsPage.tsx
+        │   └── ProfilePage.tsx
+        ├── associate/pages/
+        │   ├── AssociateDashboard.tsx
+        │   ├── AssignedProjectsPage.tsx
+        │   ├── ProjectDetailPage.tsx
+        │   └── AddUpdatePage.tsx
+        ├── admin/pages/
+        │   ├── AdminDashboard.tsx
+        │   ├── RequestQueuePage.tsx
+        │   ├── AllProjectsPage.tsx
+        │   ├── AdminProjectDetailPage.tsx
+        │   ├── BookManagementPage.tsx
+        │   ├── AddBookPage.tsx
+        │   ├── AdminReviewsPage.tsx
+        │   ├── AdminGalleryPage.tsx
+        │   ├── AdminAuditLogsPage.tsx
+        │   ├── AdminErrorLogsPage.tsx
+        │   ├── AdminMetricsDashboard.tsx
+        │   └── AdminAnalyticsPage.tsx
         ├── shared/
-        │   ├── hooks/          # Reusable React Query hooks
-        │   ├── components/     # Shared UI components
-        │   └── types/          # Shared TypeScript types
-        ├── stores/             # Zustand auth store
-        └── router/             # Route definitions & ProtectedRoute
+        │   ├── components/
+        │   │   ├── DashboardLayout.tsx
+        │   │   ├── NotificationBell.tsx
+        │   │   ├── StatusBadge.tsx
+        │   │   ├── Pagination.tsx
+        │   │   ├── LoadingSpinner.tsx
+        │   │   ├── EmptyState.tsx
+        │   │   ├── Skeletons.tsx
+        │   │   └── Toast.tsx
+        │   ├── hooks/
+        │   │   ├── useAuth.ts
+        │   │   ├── useBooks.ts
+        │   │   ├── useProjectRequests.ts
+        │   │   ├── useProjects.ts
+        │   │   ├── useReviews.ts
+        │   │   ├── useGallery.ts
+        │   │   ├── useNotifications.ts
+        │   │   ├── useAdminRequests.ts
+        │   │   ├── useAdminProjects.ts
+        │   │   ├── useAdminBooks.ts
+        │   │   ├── useAuditLogs.ts
+        │   │   ├── useErrorLogs.ts
+        │   │   ├── useMetrics.ts
+        │   │   └── useAnalytics.ts
+        │   └── types/
+        │       └── index.ts
+        ├── stores/
+        │   └── authStore.ts
+        ├── providers/
+        │   └── QueryProvider.tsx
+        └── router/
+            ├── index.tsx
+            └── ProtectedRoute.tsx
 ```
 
 ---
 
-## 👥 User Roles
+## User Roles
 
-| Role | Capabilities |
-|---|---|
-| **Customer** | Register, submit project requests, track request status, browse books, manage profile |
-| **Associate** | View assigned projects, post project updates, manage workflow stages |
-| **Admin** | Manage all users, review & approve/reject requests, convert to projects, manage book catalog |
+| Role | Access |
+|------|--------|
+| **Customer** | Browse books, submit requests, track requests, write reviews, view gallery |
+| **Associate** | View assigned projects, add progress updates, change project status |
+| **Admin** | Full access — manage everything, view all dashboards |
 
-### Project Request Lifecycle
+---
+
+## API Endpoints
+
+| Module | Prefix | Endpoints |
+|--------|--------|-----------|
+| Auth | `/api/v1/auth` | register, login, refresh, me |
+| Users | `/api/v1/users` | associates list |
+| Books | `/api/v1/books` | CRUD, stock management, low-stock |
+| Project Requests | `/api/v1/project-requests` | submit, list, status update |
+| Projects | `/api/v1/projects` | create, assign, status, updates timeline |
+| Reviews | `/api/v1/reviews` | submit, my reviews, all reviews (admin) |
+| Gallery | `/api/v1/gallery` | upload, caption, delete |
+| Notifications | `/api/v1/notifications` | list, mark read, unread count |
+| Audit Logs | `/api/v1/audit-logs` | list with filters, by entity |
+| Error Logs | `/api/v1/error-logs` | list with filters (7-day TTL) |
+| Metrics | `/api/v1/metrics` | summary, 30-day trend |
+| Analytics | `/api/v1/analytics` | full operational analytics |
+
+---
+
+## Security Features
+
+- **JWT** access + refresh tokens
+- **bcrypt + pepper** password hashing
+- **Rate limiting** on auth endpoints (slowapi)
+- **Security headers** middleware (X-Frame-Options, HSTS, CSP)
+- **Request size limiting** (5MB max)
+- **Email validation** — blocks disposable/fake emails
+- **Password strength** — uppercase, lowercase, number, special char required
+- **RBAC + ownership** checks on every sensitive endpoint
+- **Docs disabled** in production (`ENVIRONMENT=production`)
+- **State machines** enforce valid workflow transitions
+
+---
+
+## Observability
+
+| Layer | Collection | Retention |
+|-------|-----------|-----------|
+| Audit Logs | `audit_logs` | Permanent |
+| Error Logs | `error_logs` | 7 days (MongoDB TTL) |
+| Metrics | `metrics_hourly` | Permanent |
+| Analytics | Aggregated on-demand | No storage |
+
+---
+
+## MongoDB Collections
 
 ```
-SUBMITTED → UNDER_REVIEW → ACCEPTED → CONVERTED_TO_PROJECT
-                         ↘ REJECTED
-```
-
-### Project Status Lifecycle
-
-```
-PENDING → ASSIGNED → IN_PROGRESS → COMPLETED
-                   ↘            ↘ WAITING_SUPPLIER → IN_PROGRESS
-    (any stage)  → CANCELLED
+users               project_requests    projects
+project_updates     books               reviews
+gallery             notifications       audit_logs
+error_logs          metrics_hourly
 ```
 
 ---
 
-## 🚀 Getting Started
+## State Machines
 
-### Prerequisites
+**Project Request Flow:**
+```
+submitted → under_review → accepted → converted_to_project
+                        → rejected
+```
 
-- Python 3.11+
-- Node.js 18+
-- MongoDB running locally or a MongoDB Atlas URI
+**Project Flow:**
+```
+pending → assigned → in_progress → waiting_supplier → completed
+       → cancelled (from any state)
+```
 
 ---
 
-### 1. Clone the Repository
+## Local Setup
 
 ```bash
-git clone https://github.com/D13garg/Parkash-Book-Depot.git
-cd Parkash-Book-Depot
+# 1. Backend
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env          # fill in values
+python scripts/seed_admin.py  # create admin account
+uvicorn app.main:app --reload --port 8000
+
+# 2. Frontend
+cd frontend
+npm install
+npm run dev                   # http://localhost:5173
+
+# 3. Docker (everything at once)
+docker-compose up --build
 ```
 
 ---
 
-### 2. Backend Setup
+## Environment Variables (Railway)
+
+```
+SECRET_KEY=<generate: python -c "import secrets; print(secrets.token_hex(32))">
+PEPPER=<generate: python -c "import secrets; print(secrets.token_hex(32))">
+MONGODB_URL=<your Atlas connection string>
+MONGODB_DB_NAME=parkash_book_depot
+ENVIRONMENT=production
+DEBUG=false
+ALLOWED_ORIGINS=["https://your-vercel-url.vercel.app"]
+CLOUDINARY_CLOUD_NAME=<your value>
+CLOUDINARY_API_KEY=<your value>
+CLOUDINARY_API_SECRET=<your value>
+```
+
+---
+
+## Tests
 
 ```bash
 cd backend
-
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment variables
-cp .env.example .env
-# Edit .env with your MongoDB URI, SECRET_KEY, etc.
-
-# Seed the admin account
-python scripts/seed_admin.py
-
-# Start the development server
-uvicorn main:app --reload --port 8000
+pytest tests/ -v
 ```
 
-The API will be available at: `http://localhost:8000`  
-Interactive docs (Swagger UI): `http://localhost:8000/docs`  
-ReDoc: `http://localhost:8000/redoc`
+Covers: security utilities, state machine transitions, RBAC permissions.
 
 ---
 
-### 3. Frontend Setup
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Configure environment variables
-cp .env.development .env.development.local
-# Set VITE_API_URL=http://localhost:8000
-
-# Start the development server
-npm run dev
-```
-
-The frontend will be available at: `http://localhost:5173`
-
----
-
-## 🔑 Environment Variables
-
-Copy `backend/.env.example` to `backend/.env` and fill in:
-
-| Variable | Description |
-|---|---|
-| `SECRET_KEY` | JWT signing secret — generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
-| `MONGODB_URL` | MongoDB connection URI (local or Atlas) |
-| `MONGODB_DB_NAME` | Database name (default: `parkash_book_depot`) |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | JWT access token TTL (default: 30) |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | JWT refresh token TTL (default: 3) |
-| `ALLOWED_ORIGINS` | Comma-separated allowed CORS origins |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Used by `seed_admin.py` script |
-
-> ⚠️ **Never commit your `.env` file.** It is listed in `.gitignore`.
-
----
-
-## 🛠️ Available Scripts
-
-### Backend
-
-| Command | Description |
-|---|---|
-| `uvicorn main:app --reload` | Start dev server with hot reload |
-| `python scripts/seed_admin.py` | Create the first admin user |
-| `python scripts/create_associates.py` | Create associate accounts |
-| `pytest` | Run backend tests |
-
-### Frontend
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start Vite dev server |
-| `npm run build` | TypeScript compile + production build |
-| `npm run lint` | Run ESLint |
-| `npm run preview` | Preview production build locally |
-
----
-
-## 📡 API Endpoints
-
-All endpoints are prefixed with `/api/v1`.
-
-| Module | Base Path | Description |
-|---|---|---|
-| Health | `/health` | API health check |
-| Auth | `/auth` | Register, login, refresh token |
-| Books | `/books` | Book catalog (CRUD for admins) |
-| Project Requests | `/project-requests` | Submit and manage requests |
-| Projects | `/projects` | Project lifecycle management |
-
-Full interactive documentation is available at `/docs` when the backend is running.
-
----
-
-## 🔒 Security Notes
-
-- Passwords are hashed using **bcrypt** via `passlib`
-- Authentication uses **JWT access + refresh tokens**
-- All protected routes use FastAPI dependency injection for role enforcement
-- CORS is restricted to configured `ALLOWED_ORIGINS`
-- Sensitive environment variables must never be committed to version control
-
----
-
-## 🗺️ Roadmap
-
-- [x] Phase 1–5: Core auth, project requests, project management, book catalog, admin dashboard
-- [ ] Phase 6: Orders & payments (PostgreSQL integration — schema ready)
-- [ ] Phase 7: Notifications system
-- [ ] Phase 8: Analytics dashboard
-
----
-
-## 📄 License
-
-This project is private and maintained by the Parkash Book Depot team.
+*Built with FastAPI + React. Deployed on Railway + Vercel.*
