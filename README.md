@@ -1,9 +1,6 @@
 # Parkash Book Depot — Full Stack Platform
 
 A production-grade bookstore management system combining inventory management, customer project requests, internal operations, and full observability.
-
-**Live:** [parkash-book-depot.vercel.app](https://parkash-book-depot.vercel.app) | **API:** Railway.app
-
 ---
 
 ## Tech Stack
