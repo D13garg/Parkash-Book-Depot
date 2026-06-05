@@ -1,4 +1,6 @@
 import asyncio
+import time
+import logging
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone, timedelta
 from typing import List
@@ -7,15 +9,21 @@ from app.schemas.analytics import (
     ReviewMetrics, LowStockBook, StaleRequest, InactiveProject,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class AnalyticsService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
 
     async def get_analytics(self) -> AnalyticsResponse:
+        perf_total_start = time.perf_counter()
         now = datetime.now(timezone.utc)
 
         # ── Executive Summary ─────────────────────────────────────────────
+        perf_summary_start = time.perf_counter()
+        logger.info("[PERF] ANALYTICS: Starting executive summary queries...")
+        
         # Parallelize all independent count queries for better performance
         (total_requests, total_projects, completed, total_reviews, error_count_24h) = await asyncio.gather(
             self.db["project_requests"].count_documents({}),
@@ -28,7 +36,13 @@ class AnalyticsService:
         )
         
         completion_rate = round(completed / total_projects * 100, 1) if total_projects > 0 else 0.0
+        perf_summary_elapsed = time.perf_counter() - perf_summary_start
+        logger.info(f"[PERF] ANALYTICS SUMMARY: {perf_summary_elapsed:.3f}s (5 parallel queries)")
 
+        # ── Low Stock Query ──────────────────────────────────────────────
+        perf_lowstock_start = time.perf_counter()
+        logger.debug("[PERF] ANALYTICS: Starting low stock aggregation...")
+        
         # Low stock count with facet to get both count and details in single query
         low_stock_pipeline = [
             {"$match": {"is_active": True}},
@@ -45,6 +59,8 @@ class AnalyticsService:
         low_stock_result = await self.db["books"].aggregate(low_stock_pipeline).to_list(1)
         low_stock_count = low_stock_result[0]["metadata"][0]["total"] if low_stock_result and low_stock_result[0]["metadata"] else 0
         low_stock_docs = low_stock_result[0]["books"] if low_stock_result else []
+        perf_lowstock_elapsed = time.perf_counter() - perf_lowstock_start
+        logger.info(f"[PERF] ANALYTICS LOW_STOCK: {perf_lowstock_elapsed:.3f}s (count={low_stock_count}, books={len(low_stock_docs)})")
 
         summary = ExecutiveSummary(
             total_requests=total_requests,
@@ -57,14 +73,27 @@ class AnalyticsService:
         )
 
         # ── Request Conversion Rate ───────────────────────────────────────
+        perf_conversion_start = time.perf_counter()
+        logger.debug("[PERF] ANALYTICS: Starting conversion rate query...")
+        
         converted = await self.db["project_requests"].count_documents({
             "status": {"$in": ["accepted", "converted_to_project"]}
         })
         conversion_rate = round(converted / total_requests * 100, 1) if total_requests > 0 else 0.0
+        perf_conversion_elapsed = time.perf_counter() - perf_conversion_start
+        logger.info(f"[PERF] ANALYTICS CONVERSION: {perf_conversion_elapsed:.3f}s (rate={conversion_rate}%)")
 
         # ── Associate Performance (Single aggregation instead of N+1 queries) ─
         # CRITICAL FIX: Convert ObjectId to string for $lookup match
         # users._id is ObjectId, projects.assigned_to is string
+        # NOTE: If this aggregation is slow with many associates/projects, consider:
+        # - Adding compound indexes on (assigned_to, status)
+        # - Caching results for 1-5 minutes
+        # - Paginating results if needed
+        perf_associates_start = time.perf_counter()
+        logger.info("[PERF] ANALYTICS: Starting associate performance aggregation...")
+        logger.debug("[PERF] ANALYTICS: WARNING - Large $lookup with complex $let/$map may be slow with large datasets")
+        
         pipeline = [
             {"$match": {"role": "associate", "is_active": True}},
             {"$lookup": {
@@ -161,8 +190,14 @@ class AnalyticsService:
                 open_projects=doc["open_projects"],
                 avg_completion_days=doc["avg_completion_days"],
             ))
+        
+        perf_associates_elapsed = time.perf_counter() - perf_associates_start
+        logger.info(f"[PERF] ANALYTICS ASSOCIATES: {perf_associates_elapsed:.3f}s ({len(associate_perf)} associates with $lookup)")
 
         # ── Review Metrics ────────────────────────────────────────────────
+        perf_reviews_start = time.perf_counter()
+        logger.debug("[PERF] ANALYTICS: Starting review metrics queries...")
+        
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
         # Parallelize review metrics queries
@@ -176,6 +211,9 @@ class AnalyticsService:
             total_reviews=total_reviews,
             reviews_this_month=reviews_this_month,
         )
+        
+        perf_reviews_elapsed = time.perf_counter() - perf_reviews_start
+        logger.info(f"[PERF] ANALYTICS REVIEWS: {perf_reviews_elapsed:.3f}s (2 parallel queries)")
 
         # ── Low Stock Books (already fetched above with facet) ──────────────
         low_stock_books = [
@@ -187,6 +225,9 @@ class AnalyticsService:
         ]
 
         # ── Stale Requests ────────────────────────────────────────────────
+        perf_stale_start = time.perf_counter()
+        logger.debug("[PERF] ANALYTICS: Starting stale requests query...")
+        
         stale_cutoff = now - timedelta(days=7)
         stale_cursor = self.db["project_requests"].find({
             "status": {"$in": ["submitted", "under_review"]},
@@ -205,8 +246,14 @@ class AnalyticsService:
             )
             for d in stale_docs
         ]
+        
+        perf_stale_elapsed = time.perf_counter() - perf_stale_start
+        logger.info(f"[PERF] ANALYTICS STALE_REQUESTS: {perf_stale_elapsed:.3f}s ({len(stale_requests)} requests)")
 
         # ── Inactive Projects ─────────────────────────────────────────────
+        perf_inactive_start = time.perf_counter()
+        logger.debug("[PERF] ANALYTICS: Starting inactive projects query...")
+        
         inactive_cutoff = now - timedelta(days=14)
         inactive_cursor = self.db["projects"].find({
             "status": "in_progress",
@@ -224,6 +271,18 @@ class AnalyticsService:
             )
             for d in inactive_docs
         ]
+        
+        perf_inactive_elapsed = time.perf_counter() - perf_inactive_start
+        logger.info(f"[PERF] ANALYTICS INACTIVE_PROJECTS: {perf_inactive_elapsed:.3f}s ({len(inactive_projects)} projects)")
+
+        perf_total_elapsed = time.perf_counter() - perf_total_start
+        logger.info(
+            f"[PERF] ANALYTICS TOTAL: {perf_total_elapsed:.3f}s "
+            f"(summary={perf_summary_elapsed:.3f}s, low_stock={perf_lowstock_elapsed:.3f}s, "
+            f"conversion={perf_conversion_elapsed:.3f}s, associates={perf_associates_elapsed:.3f}s, "
+            f"reviews={perf_reviews_elapsed:.3f}s, stale={perf_stale_elapsed:.3f}s, "
+            f"inactive={perf_inactive_elapsed:.3f}s)"
+        )
 
         return AnalyticsResponse(
             summary=summary,
@@ -236,7 +295,18 @@ class AnalyticsService:
         )
 
     async def _get_average_rating(self) -> float:
-        """Extract average rating calculation to separate method."""
+        """
+        Extract average rating calculation to separate method.
+        Includes timing instrumentation.
+        """
+        perf_start = time.perf_counter()
+        logger.debug("[PERF] ANALYTICS: Starting average rating aggregation...")
+        
         avg_rating_pipeline = [{"$group": {"_id": None, "avg": {"$avg": "$rating"}}}]
         avg_result = await self.db["reviews"].aggregate(avg_rating_pipeline).to_list(1)
-        return round(avg_result[0]["avg"], 2) if avg_result else 0.0
+        result = round(avg_result[0]["avg"], 2) if avg_result else 0.0
+        
+        perf_elapsed = time.perf_counter() - perf_start
+        logger.debug(f"[PERF] ANALYTICS AVG_RATING: {perf_elapsed:.3f}s (result={result})")
+        
+        return result

@@ -1,3 +1,5 @@
+import time
+import logging
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import RegisterRequest, LoginRequest, TokenResponse, AccessTokenResponse, UserResponse
@@ -9,6 +11,8 @@ from app.models.user import UserModel
 from app.services.audit_log_service import audit
 from app.services.error_log_service import log_error
 from app.services.metrics_service import increment as inc_metric
+
+logger = logging.getLogger(__name__)
 
 
 def _to_user_response(user: UserModel) -> UserResponse:
@@ -96,10 +100,31 @@ class AuthService:
         return AccessTokenResponse(access_token=new_access_token)
 
     async def get_current_user_by_token(self, token: str) -> UserModel:
+        """
+        Validate JWT token and return the current user.
+        Includes detailed timing instrumentation.
+        """
+        perf_total_start = time.perf_counter()
+        
+        # ── JWT Decode ──────────────────────────────────────────────────────
+        perf_jwt_start = time.perf_counter()
         payload = decode_token(token)
+        perf_jwt_elapsed = time.perf_counter() - perf_jwt_start
+        logger.debug(f"[PERF] JWT DECODE: {perf_jwt_elapsed:.3f}s")
+        
         if not payload or payload.get("type") != "access":
             raise UnauthorizedException("Invalid or expired access token.")
+        
+        # ── User Lookup ─────────────────────────────────────────────────────
+        perf_lookup_start = time.perf_counter()
         user = await self.user_repo.find_by_id(payload["sub"])
+        perf_lookup_elapsed = time.perf_counter() - perf_lookup_start
+        logger.debug(f"[PERF] USER LOOKUP: {perf_lookup_elapsed:.3f}s (user_id={payload['sub']})")
+        
         if not user or not user.is_active:
             raise UnauthorizedException("User not found or deactivated.")
+        
+        perf_total_elapsed = time.perf_counter() - perf_total_start
+        logger.debug(f"[PERF] AUTH SERVICE TOTAL: {perf_total_elapsed:.3f}s (jwt={perf_jwt_elapsed:.3f}s, lookup={perf_lookup_elapsed:.3f}s)")
+        
         return user
