@@ -1,3 +1,4 @@
+import asyncio
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone, timedelta
 from typing import List
@@ -15,25 +16,35 @@ class AnalyticsService:
         now = datetime.now(timezone.utc)
 
         # ── Executive Summary ─────────────────────────────────────────────
-        total_requests  = await self.db["project_requests"].count_documents({})
-        total_projects  = await self.db["projects"].count_documents({})
-        completed       = await self.db["projects"].count_documents({"status": "completed"})
-        total_reviews   = await self.db["reviews"].count_documents({})
+        # Parallelize all independent count queries for better performance
+        (total_requests, total_projects, completed, total_reviews, error_count_24h) = await asyncio.gather(
+            self.db["project_requests"].count_documents({}),
+            self.db["projects"].count_documents({}),
+            self.db["projects"].count_documents({"status": "completed"}),
+            self.db["reviews"].count_documents({}),
+            self.db["error_logs"].count_documents({
+                "created_at": {"$gte": now - timedelta(hours=24)}
+            }),
+        )
+        
         completion_rate = round(completed / total_projects * 100, 1) if total_projects > 0 else 0.0
 
-        # low stock books
+        # Low stock count with facet to get both count and details in single query
         low_stock_pipeline = [
             {"$match": {"is_active": True}},
             {"$match": {"$expr": {"$lte": ["$stock", "$low_stock_threshold"]}}},
-            {"$count": "count"}
+            {"$facet": {
+                "metadata": [{"$count": "total"}],
+                "books": [
+                    {"$sort": {"stock": 1}},
+                    {"$limit": 5},
+                    {"$project": {"_id": 1, "title": 1, "stock": 1, "low_stock_threshold": 1}}
+                ]
+            }}
         ]
         low_stock_result = await self.db["books"].aggregate(low_stock_pipeline).to_list(1)
-        low_stock_count = low_stock_result[0]["count"] if low_stock_result else 0
-
-        # errors in last 24h
-        error_count_24h = await self.db["error_logs"].count_documents({
-            "created_at": {"$gte": now - timedelta(hours=24)}
-        })
+        low_stock_count = low_stock_result[0]["metadata"][0]["total"] if low_stock_result and low_stock_result[0]["metadata"] else 0
+        low_stock_docs = low_stock_result[0]["books"] if low_stock_result else []
 
         summary = ExecutiveSummary(
             total_requests=total_requests,
@@ -51,57 +62,114 @@ class AnalyticsService:
         })
         conversion_rate = round(converted / total_requests * 100, 1) if total_requests > 0 else 0.0
 
-        # ── Associate Performance ─────────────────────────────────────────
-        associates_cursor = self.db["users"].find({"role": "associate", "is_active": True})
-        associates = await associates_cursor.to_list(length=None)
+        # ── Associate Performance (Single aggregation instead of N+1 queries) ─
+        # CRITICAL FIX: Convert ObjectId to string for $lookup match
+        # users._id is ObjectId, projects.assigned_to is string
+        pipeline = [
+            {"$match": {"role": "associate", "is_active": True}},
+            {"$lookup": {
+                "from": "projects",
+                "let": {"userId": {"$toString": "$_id"}},  # Convert ObjectId to string
+                "pipeline": [
+                    {"$match": {"$expr": {"$eq": ["$assigned_to", "$$userId"]}}},
+                ],
+                "as": "projects"
+            }},
+            {"$addFields": {
+                "assigned_projects": {"$size": "$projects"},
+                "completed_projects": {
+                    "$size": {
+                        "$filter": {
+                            "input": "$projects",
+                            "as": "proj",
+                            "cond": {"$eq": ["$$proj.status", "completed"]}
+                        }
+                    }
+                },
+                "open_projects": {
+                    "$size": {
+                        "$filter": {
+                            "input": "$projects",
+                            "as": "proj",
+                            "cond": {"$in": ["$$proj.status", ["assigned", "in_progress", "waiting_supplier"]]}
+                        }
+                    }
+                },
+                "avg_completion_days": {
+                    "$let": {
+                        "vars": {
+                            "completed": {
+                                "$filter": {
+                                    "input": "$projects",
+                                    "as": "proj",
+                                    "cond": {"$eq": ["$$proj.status", "completed"]}
+                                }
+                            }
+                        },
+                        "in": {
+                            "$cond": [
+                                {"$eq": [{"$size": "$$completed"}, 0]},
+                                None,
+                                {
+                                    "$round": [
+                                        {
+                                            "$divide": [
+                                                {
+                                                    "$sum": {
+                                                        "$map": {
+                                                            "input": "$$completed",
+                                                            "as": "proj",
+                                                            "in": {
+                                                                "$divide": [
+                                                                    {"$subtract": ["$$proj.updated_at", "$$proj.created_at"]},
+                                                                    86400000
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                {"$size": "$$completed"}
+                                            ]
+                                        },
+                                        1
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            }},
+            {"$project": {
+                "associate_id": {"$toString": "$_id"},
+                "associate_name": "$name",
+                "associate_email": "$email",
+                "assigned_projects": 1,
+                "completed_projects": 1,
+                "open_projects": 1,
+                "avg_completion_days": 1,
+            }}
+        ]
 
         associate_perf: List[AssociatePerformance] = []
-        for assoc in associates:
-            aid = str(assoc["_id"])
-            assigned  = await self.db["projects"].count_documents({"assigned_to": aid})
-            completed_a = await self.db["projects"].count_documents({"assigned_to": aid, "status": "completed"})
-            open_a    = await self.db["projects"].count_documents({
-                "assigned_to": aid,
-                "status": {"$in": ["assigned", "in_progress", "waiting_supplier"]}
-            })
-
-            # avg completion time from project_updates timeline
-            avg_days = None
-            completed_projects = await self.db["projects"].find(
-                {"assigned_to": aid, "status": "completed"}
-            ).to_list(length=None)
-
-            if completed_projects:
-                total_days = 0
-                count = 0
-                for p in completed_projects:
-                    created = p.get("created_at")
-                    updated = p.get("updated_at")
-                    if created and updated:
-                        diff = (updated - created).total_seconds() / 86400
-                        total_days += diff
-                        count += 1
-                avg_days = round(total_days / count, 1) if count > 0 else None
-
+        async for doc in self.db["users"].aggregate(pipeline):
             associate_perf.append(AssociatePerformance(
-                associate_id=aid,
-                associate_name=assoc.get("name", ""),
-                associate_email=assoc.get("email", ""),
-                assigned_projects=assigned,
-                completed_projects=completed_a,
-                open_projects=open_a,
-                avg_completion_days=avg_days,
+                associate_id=doc["associate_id"],
+                associate_name=doc["associate_name"],
+                associate_email=doc["associate_email"],
+                assigned_projects=doc["assigned_projects"],
+                completed_projects=doc["completed_projects"],
+                open_projects=doc["open_projects"],
+                avg_completion_days=doc["avg_completion_days"],
             ))
 
         # ── Review Metrics ────────────────────────────────────────────────
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        reviews_this_month = await self.db["reviews"].count_documents({
-            "created_at": {"$gte": month_start}
-        })
-
-        avg_rating_pipeline = [{"$group": {"_id": None, "avg": {"$avg": "$rating"}}}]
-        avg_result = await self.db["reviews"].aggregate(avg_rating_pipeline).to_list(1)
-        avg_rating = round(avg_result[0]["avg"], 2) if avg_result else 0.0
+        
+        # Parallelize review metrics queries
+        (reviews_this_month, avg_rating) = await asyncio.gather(
+            self.db["reviews"].count_documents({"created_at": {"$gte": month_start}}),
+            self._get_average_rating(),
+        )
 
         review_metrics = ReviewMetrics(
             average_rating=avg_rating,
@@ -109,14 +177,7 @@ class AnalyticsService:
             reviews_this_month=reviews_this_month,
         )
 
-        # ── Low Stock Books ───────────────────────────────────────────────
-        low_stock_cursor = self.db["books"].aggregate([
-            {"$match": {"is_active": True}},
-            {"$match": {"$expr": {"$lte": ["$stock", "$low_stock_threshold"]}}},
-            {"$sort": {"stock": 1}},
-            {"$limit": 5},
-        ])
-        low_stock_docs = await low_stock_cursor.to_list(length=5)
+        # ── Low Stock Books (already fetched above with facet) ──────────────
         low_stock_books = [
             LowStockBook(
                 id=str(d["_id"]), title=d["title"],
@@ -173,3 +234,9 @@ class AnalyticsService:
             stale_requests=stale_requests,
             inactive_projects=inactive_projects,
         )
+
+    async def _get_average_rating(self) -> float:
+        """Extract average rating calculation to separate method."""
+        avg_rating_pipeline = [{"$group": {"_id": None, "avg": {"$avg": "$rating"}}}]
+        avg_result = await self.db["reviews"].aggregate(avg_rating_pipeline).to_list(1)
+        return round(avg_result[0]["avg"], 2) if avg_result else 0.0
