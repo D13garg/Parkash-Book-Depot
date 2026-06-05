@@ -11,8 +11,8 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: pytest backend/tests/
         env:
-          SECRET_KEY: test-secret-key-for-ci
-          PEPPER: test-pepper-for-ci
+          SECRET_KEY: test-secret-key-for-ci-that-is-long-enough-32chars
+          PEPPER: test-pepper-for-ci-that-is-long-enough-32chars
           MONGODB_URL: mongodb://localhost:27017
           CLOUDINARY_CLOUD_NAME: test
           CLOUDINARY_API_KEY: test
