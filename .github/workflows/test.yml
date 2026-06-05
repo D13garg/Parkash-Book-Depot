@@ -4,16 +4,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: pip install -r backend/requirements.txt
       - run: pytest backend/tests/
         env:
-    SECRET_KEY: test-secret-key-for-ci
-    PEPPER: test-pepper-for-ci
-    MONGODB_URL: mongodb://localhost:27017
-    CLOUDINARY_CLOUD_NAME: test
-    CLOUDINARY_API_KEY: test
-    CLOUDINARY_API_SECRET: test
+          SECRET_KEY: test-secret-key-for-ci
+          PEPPER: test-pepper-for-ci
+          MONGODB_URL: mongodb://localhost:27017
+          CLOUDINARY_CLOUD_NAME: test
+          CLOUDINARY_API_KEY: test
+          CLOUDINARY_API_SECRET: test
