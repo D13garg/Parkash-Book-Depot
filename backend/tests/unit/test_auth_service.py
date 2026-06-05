@@ -24,9 +24,9 @@ class TestRegister:
             r.email_exists = AsyncMock(return_value=False)
             r.create = AsyncMock(return_value=user)
             result = await AuthService(mock_db).register(
-                RegisterRequest(name="Test User", email="test@example.com", password="Password1!")
+                RegisterRequest(name="Test User", email="test@gmail.com", password="Password1!")
             )
-        assert result.user.email == "test@example.com"
+        assert result.user.email == "test@gmail.com"
         assert result.access_token is not None
         assert result.refresh_token is not None
 
@@ -70,10 +70,10 @@ class TestLogin:
              patch("app.services.auth_service.inc_metric"):
             R.return_value.find_by_email = AsyncMock(return_value=user)
             result = await AuthService(mock_db).login(
-                LoginRequest(email="test@example.com", password="Password1!")
+                LoginRequest(email="test@gmail.com", password="Password1!")
             )
         assert result.access_token is not None
-        assert result.user.email == "test@example.com"
+        assert result.user.email == "test@gmail.com"
 
     async def test_login_wrong_password_raises(self, mock_db):
         user = make_user()
@@ -85,7 +85,7 @@ class TestLogin:
             R.return_value.find_by_email = AsyncMock(return_value=user)
             with pytest.raises(UnauthorizedException):
                 await AuthService(mock_db).login(
-                    LoginRequest(email="test@example.com", password="WrongPass1!")
+                    LoginRequest(email="test@gmail.com", password="WrongPass1!")
                 )
 
     async def test_login_user_not_found_raises(self, mock_db):
@@ -109,5 +109,5 @@ class TestLogin:
             R.return_value.find_by_email = AsyncMock(return_value=user)
             with pytest.raises(UnauthorizedException):
                 await AuthService(mock_db).login(
-                    LoginRequest(email="test@example.com", password="Password1!")
+                    LoginRequest(email="test@gmail.com", password="Password1!")
                 )
