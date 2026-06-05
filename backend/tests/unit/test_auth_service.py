@@ -16,7 +16,7 @@ class TestRegister:
         return db
 
     async def test_register_success(self, mock_db):
-        user = make_user()
+        user = make_user(email="john@gmail.com")
         with patch("app.services.auth_service.UserRepository") as R, \
              patch("app.services.auth_service.audit"), \
              patch("app.services.auth_service.inc_metric"):
@@ -24,9 +24,9 @@ class TestRegister:
             r.email_exists = AsyncMock(return_value=False)
             r.create = AsyncMock(return_value=user)
             result = await AuthService(mock_db).register(
-                RegisterRequest(name="Test User", email="test@gmail.com", password="Password1!")
+                RegisterRequest(name="Test User", email="john@gmail.com", password="Password1!")
             )
-        assert result.user.email == "test@gmail.com"
+        assert result.user.email == "john@gmail.com"
         assert result.access_token is not None
         assert result.refresh_token is not None
 
@@ -35,18 +35,17 @@ class TestRegister:
             R.return_value.email_exists = AsyncMock(return_value=True)
             with pytest.raises(ConflictException):
                 await AuthService(mock_db).register(
-                    RegisterRequest(name="Test", email="existing@example.com", password="Password1!")
+                    RegisterRequest(name="Test", email="john@gmail.com", password="Password1!")
                 )
 
     async def test_register_creates_customer_role(self, mock_db):
-        user = make_user(role=UserRole.CUSTOMER)
+        user = make_user(role=UserRole.CUSTOMER, email="john@gmail.com")
         with patch("app.services.auth_service.UserRepository") as R, \
              patch("app.services.auth_service.audit"), \
              patch("app.services.auth_service.inc_metric"):
             r = R.return_value
             r.email_exists = AsyncMock(return_value=False)
             r.create = AsyncMock(return_value=user)
-            # Check doc passed to create has customer role
             result = await AuthService(mock_db).register(
                 RegisterRequest(name="Test User", email="john@gmail.com", password="Password1!")
             )
@@ -62,7 +61,7 @@ class TestLogin:
         return db
 
     async def test_login_success(self, mock_db):
-        user = make_user()
+        user = make_user(email="john@gmail.com")
         user.hashed_password = hash_password("Password1!")
         with patch("app.services.auth_service.UserRepository") as R, \
              patch("app.services.auth_service.audit"), \
@@ -70,13 +69,13 @@ class TestLogin:
              patch("app.services.auth_service.inc_metric"):
             R.return_value.find_by_email = AsyncMock(return_value=user)
             result = await AuthService(mock_db).login(
-                LoginRequest(email="test@gmail.com", password="Password1!")
+                LoginRequest(email="john@gmail.com", password="Password1!")
             )
         assert result.access_token is not None
-        assert result.user.email == "test@gmail.com"
+        assert result.user.email == "john@gmail.com"
 
     async def test_login_wrong_password_raises(self, mock_db):
-        user = make_user()
+        user = make_user(email="john@gmail.com")
         user.hashed_password = hash_password("Password1!")
         with patch("app.services.auth_service.UserRepository") as R, \
              patch("app.services.auth_service.audit"), \
@@ -85,7 +84,7 @@ class TestLogin:
             R.return_value.find_by_email = AsyncMock(return_value=user)
             with pytest.raises(UnauthorizedException):
                 await AuthService(mock_db).login(
-                    LoginRequest(email="test@gmail.com", password="WrongPass1!")
+                    LoginRequest(email="john@gmail.com", password="WrongPass1!")
                 )
 
     async def test_login_user_not_found_raises(self, mock_db):
@@ -96,11 +95,11 @@ class TestLogin:
             R.return_value.find_by_email = AsyncMock(return_value=None)
             with pytest.raises(UnauthorizedException):
                 await AuthService(mock_db).login(
-                    LoginRequest(email="nobody@example.com", password="Password1!")
+                    LoginRequest(email="nobody@gmail.com", password="Password1!")
                 )
 
     async def test_login_inactive_user_raises(self, mock_db):
-        user = make_user(is_active=False)
+        user = make_user(is_active=False, email="john@gmail.com")
         user.hashed_password = hash_password("Password1!")
         with patch("app.services.auth_service.UserRepository") as R, \
              patch("app.services.auth_service.audit"), \
@@ -109,5 +108,5 @@ class TestLogin:
             R.return_value.find_by_email = AsyncMock(return_value=user)
             with pytest.raises(UnauthorizedException):
                 await AuthService(mock_db).login(
-                    LoginRequest(email="test@gmail.com", password="Password1!")
+                    LoginRequest(email="john@gmail.com", password="Password1!")
                 )
