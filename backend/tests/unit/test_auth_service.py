@@ -48,7 +48,7 @@ class TestRegister:
             r.create = AsyncMock(return_value=user)
             # Check doc passed to create has customer role
             result = await AuthService(mock_db).register(
-                RegisterRequest(name="Test", email="new@example.com", password="Password1!")
+                RegisterRequest(name="Test User", email="john@gmail.com", password="Password1!")
             )
             call_args = r.create.call_args[0][0]
             assert call_args["role"] == UserRole.CUSTOMER.value

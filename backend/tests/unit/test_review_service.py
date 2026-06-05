@@ -40,7 +40,7 @@ class TestSubmitReview:
             R.return_value.create = AsyncMock(return_value=review)
             R.return_value.collection = MagicMock(database=mock_db)
             await ReviewService(mock_db).submit_review(
-                CreateReviewRequest(rating=4, category="service", message="Good"),
+                CreateReviewRequest(rating=4, category="service", message="Great"),
                 _customer()
             )
             doc = R.return_value.create.call_args[0][0]

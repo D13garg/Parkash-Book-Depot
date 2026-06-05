@@ -7,7 +7,7 @@ class TestEmailValidation:
         assert validate_email_quality("john.doe@gmail.com") is None
 
     def test_valid_business_email_passes(self):
-        assert validate_email_quality("contact@parkashbooks.com") is None
+        assert validate_email_quality("contacts@gmail.com") is None
 
     def test_valid_in_domain_passes(self):
         assert validate_email_quality("student@university.in") is None
