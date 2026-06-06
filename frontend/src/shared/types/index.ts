@@ -54,6 +54,7 @@ export interface Book {
   categories: string[]
   price: number
   stock: number
+  low_stock_threshold: number
   is_low_stock: boolean
   publisher: string | null
   isbn: string | null

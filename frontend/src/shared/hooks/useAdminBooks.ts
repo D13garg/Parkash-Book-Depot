@@ -15,6 +15,32 @@ export interface CreateBookData {
   low_stock_threshold?: number
 }
 
+export interface UpdateBookData {
+  title?: string
+  authors?: string[]
+  categories?: string[]
+  price?: number
+  stock?: number
+  publisher?: string
+  isbn?: string
+  description?: string
+  language?: string
+  low_stock_threshold?: number
+  cover_image_url?: string
+  edition?: string
+}
+
+export function useBook(bookId: string) {
+  return useQuery({
+    queryKey: ["book", bookId],
+    queryFn: async () => {
+      const res = await api.get<Book>(`/books/${bookId}`)
+      return res.data
+    },
+    enabled: !!bookId,
+  })
+}
+
 export function useAdminBooks(page = 1, pageSize = 20, search?: string) {
   return useQuery({
     queryKey: ["admin-books", page, pageSize, search],
@@ -52,6 +78,22 @@ export function useCreateBook() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-books"] })
       queryClient.invalidateQueries({ queryKey: ["books"] })
+    },
+  })
+}
+
+export function useUpdateBook(bookId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: UpdateBookData) => {
+      const res = await api.put<Book>(`/books/${bookId}`, data)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-books"] })
+      queryClient.invalidateQueries({ queryKey: ["books"] })
+      queryClient.invalidateQueries({ queryKey: ["book", bookId] })
     },
   })
 }

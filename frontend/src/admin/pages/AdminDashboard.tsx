@@ -5,6 +5,7 @@ import { AllProjectsPage }         from "./AllProjectsPage"
 import { AdminProjectDetailPage }  from "./AdminProjectDetailPage"
 import { BookManagementPage }      from "./BookManagementPage"
 import { AddBookPage }             from "./AddBookPage"
+import { EditBookPage }            from "./EditBookPage"
 import { AdminReviewsPage }        from "./AdminReviewsPage"
 import { AdminGalleryPage }        from "./AdminGalleryPage"
 import { AdminAuditLogsPage }     from "./AdminAuditLogsPage"
@@ -35,6 +36,7 @@ export function AdminDashboard() {
         <Route path="projects/:projectId" element={<AdminProjectDetailPage />} />
         <Route path="books"               element={<BookManagementPage />} />
         <Route path="books/add"           element={<AddBookPage />} />
+        <Route path="books/:bookId/edit"  element={<EditBookPage />} />
         <Route path="reviews"             element={<AdminReviewsPage />} />
         <Route path="gallery"             element={<AdminGalleryPage />} />
         <Route path="audit-logs"         element={<AdminAuditLogsPage />} />

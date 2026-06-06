@@ -100,6 +100,7 @@ export function BookManagementPage() {
                   <th className="text-right px-4 py-3 font-medium text-muted-foreground">Price</th>
                   <th className="text-right px-4 py-3 font-medium text-muted-foreground">Stock</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Status</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -123,6 +124,14 @@ export function BookManagementPage() {
                       ) : (
                         <span className="badge-success">Active</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        to={`/admin/books/${book.id}/edit`}
+                        className="btn-secondary text-xs py-1.5 px-3"
+                      >
+                        Edit
+                      </Link>
                     </td>
                   </tr>
                 ))}
