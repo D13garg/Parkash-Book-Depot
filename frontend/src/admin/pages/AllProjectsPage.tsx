@@ -8,10 +8,10 @@ import { EmptyState } from "@/shared/components/EmptyState"
 import { Pagination } from "@/shared/components/Pagination"
 
 const PRIORITY_STYLES: Record<string, string> = {
-  low:    "bg-gray-100 text-gray-600",
-  medium: "bg-blue-100 text-blue-600",
-  high:   "bg-orange-100 text-orange-600",
-  urgent: "bg-red-100 text-red-600",
+  low:    "badge-neutral",
+  medium: "badge-info",
+  high:   "badge-warning",
+  urgent: "badge-danger",
 }
 
 export function AllProjectsPage() {
@@ -79,8 +79,8 @@ export function AllProjectsPage() {
                     <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
                       <span>📅 {new Date(project.created_at).toLocaleDateString()}</span>
                       {project.assigned_to
-                        ? <span className="text-green-600">👤 Assigned</span>
-                        : <span className="text-orange-500">⚠️ Unassigned</span>
+                        ? <span className="text-success">👤 Assigned</span>
+                        : <span className="text-warning">⚠️ Unassigned</span>
                       }
                       {project.deadline && (
                         <span className={new Date(project.deadline) < new Date() ? "text-destructive font-medium" : ""}>

@@ -1,16 +1,14 @@
-// Base skeleton pulse animation
 function Skeleton({ className }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-muted ${className ?? ""}`}
+      className={`skeleton-shimmer rounded-md ${className ?? ""}`}
     />
   )
 }
 
-// Single book card skeleton
 export function BookCardSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3">
+    <div className="surface-card p-4 flex flex-col gap-3">
       <Skeleton className="aspect-[3/4] w-full rounded-lg" />
       <Skeleton className="h-4 w-3/4" />
       <Skeleton className="h-3 w-1/2" />
@@ -22,7 +20,6 @@ export function BookCardSkeleton() {
   )
 }
 
-// Grid of book card skeletons
 export function BooksGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -33,10 +30,9 @@ export function BooksGridSkeleton({ count = 8 }: { count?: number }) {
   )
 }
 
-// List item skeleton (for requests, projects)
 export function ListItemSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+    <div className="surface-card p-5 space-y-3">
       <div className="flex items-center gap-3">
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-5 w-20 rounded-full" />
@@ -52,7 +48,6 @@ export function ListItemSkeleton() {
   )
 }
 
-// List of item skeletons
 export function ListSkeleton({ count = 5 }: { count?: number }) {
   return (
     <div className="space-y-3">
@@ -63,7 +58,6 @@ export function ListSkeleton({ count = 5 }: { count?: number }) {
   )
 }
 
-// Table row skeleton
 export function TableRowSkeleton() {
   return (
     <tr>
@@ -76,12 +70,11 @@ export function TableRowSkeleton() {
   )
 }
 
-// Table skeleton
 export function TableSkeleton({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="surface-card overflow-hidden">
       <table className="w-full">
-        <thead className="bg-muted">
+        <thead className="bg-muted/50">
           <tr>
             {["Title", "Authors", "Price", "Stock", "Actions"].map((h) => (
               <th key={h} className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">{h}</th>
@@ -98,12 +91,11 @@ export function TableSkeleton({ rows = 6 }: { rows?: number }) {
   )
 }
 
-// Project detail skeleton
 export function ProjectDetailSkeleton() {
   return (
     <div className="max-w-3xl space-y-6">
       <Skeleton className="h-4 w-32" />
-      <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+      <div className="surface-card p-6 space-y-4">
         <div className="flex justify-between">
           <div className="space-y-2">
             <Skeleton className="h-6 w-64" />

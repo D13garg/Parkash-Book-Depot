@@ -42,10 +42,10 @@ function StatCard({ icon, label, value, sub, highlight = false }: {
 
 function Badge({ label, variant }: { label: string; variant: "warning" | "error" | "success" | "info" }) {
   const styles = {
-    warning: "bg-yellow-100 text-yellow-700",
-    error:   "bg-red-100 text-red-700",
-    success: "bg-green-100 text-green-700",
-    info:    "bg-blue-100 text-blue-700",
+    warning: "badge-warning",
+    error:   "badge-danger",
+    success: "badge-success",
+    info:    "badge-info",
   }
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[variant]}`}>
@@ -118,11 +118,11 @@ export function AdminAnalyticsPage() {
             </div>
             <div className="flex items-center justify-between py-3 border-b border-border">
               <span className="text-sm text-muted-foreground">Converted to Projects</span>
-              <span className="font-semibold text-green-600">{summary.completed_projects}</span>
+              <span className="font-semibold text-success">{summary.completed_projects}</span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-muted-foreground">Conversion Rate</span>
-              <span className={`font-bold text-lg ${request_conversion_rate >= 50 ? "text-green-600" : "text-orange-500"}`}>
+              <span className={`font-bold text-lg ${request_conversion_rate >= 50 ? "text-success" : "text-warning"}`}>
                 {request_conversion_rate}%
               </span>
             </div>
@@ -145,17 +145,17 @@ export function AdminAnalyticsPage() {
             </div>
             <div className="flex items-center justify-between py-3 border-b border-border">
               <span className="text-sm text-muted-foreground">Completed</span>
-              <span className="font-semibold text-green-600">{summary.completed_projects}</span>
+              <span className="font-semibold text-success">{summary.completed_projects}</span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-border">
               <span className="text-sm text-muted-foreground">In Progress</span>
-              <span className="font-semibold text-blue-600">
+              <span className="font-semibold text-info">
                 {summary.total_projects - summary.completed_projects}
               </span>
             </div>
             <div className="flex items-center justify-between py-3">
               <span className="text-sm text-muted-foreground">Completion Rate</span>
-              <span className={`font-bold text-lg ${summary.completion_rate_percent >= 60 ? "text-green-600" : "text-orange-500"}`}>
+              <span className={`font-bold text-lg ${summary.completion_rate_percent >= 60 ? "text-success" : "text-warning"}`}>
                 {summary.completion_rate_percent}%
               </span>
             </div>
@@ -193,10 +193,10 @@ export function AdminAnalyticsPage() {
                     </td>
                     <td className="px-4 py-3 text-foreground">{a.assigned_projects}</td>
                     <td className="px-4 py-3">
-                      <span className="text-green-600 font-medium">{a.completed_projects}</span>
+                      <span className="text-success font-medium">{a.completed_projects}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={a.open_projects > 3 ? "text-orange-500 font-medium" : "text-foreground"}>
+                      <span className={a.open_projects > 3 ? "text-warning font-medium" : "text-foreground"}>
                         {a.open_projects}
                       </span>
                     </td>
@@ -218,13 +218,13 @@ export function AdminAnalyticsPage() {
           <SectionTitle icon="⭐" title="Review Metrics" subtitle="Customer satisfaction overview" />
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="text-4xl font-bold text-yellow-500">
+              <div className="text-4xl font-bold text-primary">
                 {review_metrics.average_rating > 0 ? review_metrics.average_rating.toFixed(1) : "—"}
               </div>
               <div>
                 <div className="flex gap-0.5">
                   {[1,2,3,4,5].map((s) => (
-                    <span key={s} className={s <= Math.round(review_metrics.average_rating) ? "text-yellow-400" : "text-gray-300"}>
+                    <span key={s} className={s <= Math.round(review_metrics.average_rating) ? "text-primary" : "text-muted-foreground/40"}>
                       ★
                     </span>
                   ))}
@@ -248,7 +248,7 @@ export function AdminAnalyticsPage() {
         <Card>
           <SectionTitle icon="📦" title="Low Stock Alert" subtitle="Books below threshold — top 5" />
           {low_stock_books.length === 0 ? (
-            <p className="text-sm text-green-600 flex items-center gap-2">
+            <p className="text-sm text-success flex items-center gap-2">
               <span>✅</span> All books are well stocked.
             </p>
           ) : (
@@ -257,7 +257,7 @@ export function AdminAnalyticsPage() {
                 <div key={book.id} className="flex items-center justify-between">
                   <p className="text-sm text-foreground line-clamp-1 flex-1 mr-3">{book.title}</p>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`text-sm font-bold ${book.stock === 0 ? "text-destructive" : "text-orange-500"}`}>
+                    <span className={`text-sm font-bold ${book.stock === 0 ? "text-destructive" : "text-warning"}`}>
                       {book.stock} left
                     </span>
                     <Badge label={book.stock === 0 ? "Out" : "Low"} variant={book.stock === 0 ? "error" : "warning"} />
@@ -275,7 +275,7 @@ export function AdminAnalyticsPage() {
         <Card>
           <SectionTitle icon="⏳" title="Stale Requests" subtitle="Pending for more than 7 days — needs attention" />
           {stale_requests.length === 0 ? (
-            <p className="text-sm text-green-600 flex items-center gap-2">
+            <p className="text-sm text-success flex items-center gap-2">
               <span>✅</span> No stale requests.
             </p>
           ) : (
@@ -299,7 +299,7 @@ export function AdminAnalyticsPage() {
         <Card>
           <SectionTitle icon="🔄" title="Inactive Projects" subtitle="In progress with no update for 14+ days" />
           {inactive_projects.length === 0 ? (
-            <p className="text-sm text-green-600 flex items-center gap-2">
+            <p className="text-sm text-success flex items-center gap-2">
               <span>✅</span> All active projects are being updated.
             </p>
           ) : (

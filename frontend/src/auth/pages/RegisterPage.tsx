@@ -36,17 +36,22 @@ export function RegisterPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <span className="text-4xl">📚</span>
-          <h1 className="mt-3 text-2xl font-bold text-foreground">Parkash Book Depot</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Create your account</p>
+    <div className="min-h-screen mesh-bg flex items-center justify-center px-4 py-10 relative overflow-hidden">
+      <div className="glow-orb w-96 h-96 bg-primary/20 -top-48 left-1/2 -translate-x-1/2" />
+      <div className="glow-orb w-64 h-64 bg-purple/10 bottom-0 left-0" style={{ animationDelay: "2s" }} />
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="text-center mb-10">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 border border-primary/30 text-3xl shadow-glow-lg mb-5" style={{ animation: "float 4s ease-in-out infinite" }}>
+            📚
+          </div>
+          <h1 className="font-display text-3xl font-bold gradient-text">Parkash Book Depot</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Create your account</p>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
+        <div className="glass-panel rounded-2xl p-8 shadow-card">
           {errorMessage && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+            <div className="mb-5 alert-error">
               {errorMessage}
             </div>
           )}
@@ -58,7 +63,7 @@ export function RegisterPage() {
                 {...register("name")}
                 type="text"
                 placeholder="Your full name"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+                className="input-field"
               />
               {errors.name && (
                 <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>
@@ -71,7 +76,7 @@ export function RegisterPage() {
                 {...register("email")}
                 type="email"
                 placeholder="you@example.com"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+                className="input-field"
               />
               {errors.email && (
                 <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>
@@ -84,7 +89,7 @@ export function RegisterPage() {
                 {...register("password")}
                 type="password"
                 placeholder="Min. 8 characters"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+                className="input-field"
               />
               {errors.password && (
                 <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
@@ -99,14 +104,14 @@ export function RegisterPage() {
                 {...register("phone")}
                 type="tel"
                 placeholder="+91 98765 43210"
-                className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+                className="input-field"
               />
             </div>
 
             <button
               type="submit"
               disabled={isRegistering}
-              className="w-full py-2.5 px-4 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-full btn-primary"
             >
               {isRegistering ? "Creating account..." : "Create account"}
             </button>
@@ -114,7 +119,7 @@ export function RegisterPage() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
+            <Link to="/login" className="text-primary font-semibold hover:underline">
               Sign in
             </Link>
           </p>

@@ -16,7 +16,7 @@ function StatCard({
   icon: string
 }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-5">
+    <div className="stat-card">
       <div className="flex items-center justify-between mb-3">
         <span className="text-2xl">{icon}</span>
         {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
@@ -85,11 +85,11 @@ export function AdminMetricsDashboard() {
       <div>
         <SectionHeader title="All Time" subtitle="Total counts across the entire platform" />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          <StatCard icon="👥" label="Total Users"    value={summary?.total_users ?? 0}    color="text-blue-600" />
-          <StatCard icon="📚" label="Total Books"    value={summary?.total_books ?? 0}    color="text-green-600" />
-          <StatCard icon="📋" label="Total Requests" value={summary?.total_requests ?? 0} color="text-purple-600" />
-          <StatCard icon="📂" label="Total Projects" value={summary?.total_projects ?? 0} color="text-orange-600" />
-          <StatCard icon="⭐" label="Total Reviews"  value={summary?.total_reviews ?? 0}  color="text-yellow-600" />
+          <StatCard icon="👥" label="Total Users"    value={summary?.total_users ?? 0}    color="text-info" />
+          <StatCard icon="📚" label="Total Books"    value={summary?.total_books ?? 0}    color="text-success" />
+          <StatCard icon="📋" label="Total Requests" value={summary?.total_requests ?? 0} color="text-purple" />
+          <StatCard icon="📂" label="Total Projects" value={summary?.total_projects ?? 0} color="text-warning" />
+          <StatCard icon="⭐" label="Total Reviews"  value={summary?.total_reviews ?? 0}  color="text-primary" />
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export function AdminMetricsDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard icon="👤" label="New Users"      value={summary?.today_new_users ?? 0}     sub="today" />
           <StatCard icon="🔑" label="Logins"         value={summary?.today_logins ?? 0}         sub="today" />
-          <StatCard icon="🔒" label="Failed Logins"  value={summary?.today_failed_logins ?? 0}  sub="today" color={summary?.today_failed_logins ? "text-orange-600" : "text-primary"} />
+          <StatCard icon="🔒" label="Failed Logins"  value={summary?.today_failed_logins ?? 0}  sub="today" color={summary?.today_failed_logins ? "text-warning" : "text-primary"} />
           <StatCard icon="📋" label="Requests"       value={summary?.today_requests ?? 0}       sub="today" />
           <StatCard icon="⭐" label="Reviews"        value={summary?.today_reviews ?? 0}        sub="today" />
           <StatCard icon="🔴" label="Errors"         value={summary?.today_errors ?? 0}         sub="today" color={summary?.today_errors ? "text-destructive" : "text-primary"} />
@@ -124,13 +124,13 @@ export function AdminMetricsDashboard() {
           <LoadingSpinner size="md" text="Loading trend data..." />
         </div>
       ) : dailyData.length === 0 ? (
-        <div className="bg-card border border-border rounded-xl p-8 text-center text-muted-foreground text-sm">
+        <div className="surface-card p-8 text-center text-muted-foreground text-sm">
           Not enough data yet for trend charts. Charts will appear after a few days of activity.
         </div>
       ) : (
         <>
           {/* Activity chart */}
-          <div className="bg-card border border-border rounded-xl p-6">
+          <div className="surface-card p-6">
             <SectionHeader
               title="Activity Trend — Last 14 Days"
               subtitle="Daily logins, requests and reviews"
@@ -158,7 +158,7 @@ export function AdminMetricsDashboard() {
 
           {/* New users + errors chart */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-card border border-border rounded-xl p-6">
+            <div className="surface-card p-6">
               <SectionHeader title="New Users" subtitle="Daily registrations" />
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={dailyData}>
@@ -178,7 +178,7 @@ export function AdminMetricsDashboard() {
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-card border border-border rounded-xl p-6">
+            <div className="surface-card p-6">
               <SectionHeader title="Errors" subtitle="Daily error count" />
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={dailyData}>

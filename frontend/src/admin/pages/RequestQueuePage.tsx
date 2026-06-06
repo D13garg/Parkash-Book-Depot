@@ -24,7 +24,7 @@ function RequestCard({
   const [adminNote, setAdminNote] = useState("")
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5">
+    <div className="surface-card p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
@@ -65,7 +65,7 @@ function RequestCard({
                 <button
                   onClick={() => onStatusChange("under_review", adminNote)}
                   disabled={isUpdating}
-                  className="px-3 py-1.5 text-sm bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 disabled:opacity-50 transition-colors"
+                  className="btn-warning"
                 >
                   Mark Under Review
                 </button>
@@ -74,7 +74,7 @@ function RequestCard({
                 <button
                   onClick={() => onStatusChange("accepted", adminNote)}
                   disabled={isUpdating}
-                  className="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50 transition-colors"
+                  className="btn-success"
                 >
                   ✓ Accept
                 </button>
@@ -82,7 +82,7 @@ function RequestCard({
               <button
                 onClick={() => setShowRejectForm(true)}
                 disabled={isUpdating}
-                className="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 transition-colors"
+                className="btn-danger"
               >
                 ✗ Reject
               </button>
@@ -100,7 +100,7 @@ function RequestCard({
                 <button
                   onClick={() => onStatusChange("rejected", adminNote, rejectReason)}
                   disabled={isUpdating || !rejectReason.trim()}
-                  className="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 transition-colors"
+                  className="btn-danger"
                 >
                   Confirm Reject
                 </button>
@@ -131,7 +131,7 @@ function RequestCard({
 
       {request.status === "converted_to_project" && (
         <div className="mt-4 pt-4 border-t border-border">
-          <span className="text-sm text-purple-600 font-medium">
+          <span className="text-sm text-purple font-medium">
             ✓ Converted to internal project
           </span>
         </div>

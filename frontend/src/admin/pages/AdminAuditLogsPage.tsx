@@ -23,15 +23,15 @@ const ACTION_ICONS: Record<string, string> = {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  user_registered:        "text-green-600 bg-green-50",
-  user_login_failed:      "text-red-600 bg-red-50",
-  book_deleted:           "text-red-600 bg-red-50",
-  gallery_photo_deleted:  "text-red-600 bg-red-50",
-  book_created:           "text-blue-600 bg-blue-50",
-  project_created:        "text-blue-600 bg-blue-50",
-  gallery_photo_uploaded: "text-blue-600 bg-blue-50",
-  project_assigned:       "text-purple-600 bg-purple-50",
-  review_submitted:       "text-yellow-600 bg-yellow-50",
+  user_registered:        "badge-success",
+  user_login_failed:      "badge-danger",
+  book_deleted:           "badge-danger",
+  gallery_photo_deleted:  "badge-danger",
+  book_created:           "badge-info",
+  project_created:        "badge-info",
+  gallery_photo_uploaded: "badge-info",
+  project_assigned:       "badge-purple",
+  review_submitted:       "badge-warning",
 }
 
 function timeAgo(dateStr: string): string {
@@ -140,7 +140,7 @@ export function AdminAuditLogsPage() {
                 {data?.items.map((log) => (
                   <tr key={log.id} className="hover:bg-muted/40 transition-colors">
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${ACTION_COLORS[log.action] ?? "text-gray-600 bg-gray-50"}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${ACTION_COLORS[log.action] ?? "badge-neutral"}`}>
                         <span>{ACTION_ICONS[log.action] ?? "🔔"}</span>
                         {log.action.replace(/_/g, " ")}
                       </span>

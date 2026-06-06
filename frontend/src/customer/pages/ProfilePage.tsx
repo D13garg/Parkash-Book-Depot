@@ -72,8 +72,8 @@ export function ProfilePage() {
               Account Status
             </label>
             <p className="mt-1">
-              <span className="inline-flex items-center gap-1.5 text-sm text-green-700">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="inline-flex items-center gap-1.5 text-sm text-success">
+                <span className="h-2 w-2 rounded-full bg-success shadow-glow" />
                 Active
               </span>
             </p>

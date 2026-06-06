@@ -55,7 +55,7 @@ export function BookManagementPage() {
       </div>
 
       {lowStock && lowStock.length > 0 && (
-        <div className="mb-6 px-4 py-3 rounded-xl bg-orange-50 border border-orange-200 text-sm text-orange-800">
+        <div className="mb-6 alert-warning">
           <span className="font-medium">{lowStock.length} book{lowStock.length > 1 ? "s" : ""}</span> below low-stock threshold
         </div>
       )}
@@ -111,7 +111,7 @@ export function BookManagementPage() {
                     </td>
                     <td className="px-4 py-3 text-right">₹{book.price.toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className={book.is_low_stock ? "text-orange-600 font-medium" : ""}>
+                      <span className={book.is_low_stock ? "text-warning font-medium" : ""}>
                         {book.stock}
                       </span>
                     </td>
@@ -119,9 +119,9 @@ export function BookManagementPage() {
                       {!book.is_active ? (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Inactive</span>
                       ) : book.is_low_stock ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Low stock</span>
+                        <span className="badge-warning">Low stock</span>
                       ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Active</span>
+                        <span className="badge-success">Active</span>
                       )}
                     </td>
                   </tr>

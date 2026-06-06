@@ -14,7 +14,7 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <span>
       {[1,2,3,4,5].map((s) => (
-        <span key={s} className={s <= rating ? "text-yellow-400" : "text-gray-300"}>★</span>
+        <span key={s} className={s <= rating ? "text-primary" : "text-muted-foreground/40"}>★</span>
       ))}
     </span>
   )

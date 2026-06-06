@@ -66,7 +66,7 @@ export function AddBookPage() {
 
       <div className="bg-card border border-border rounded-xl p-6">
         {isSuccess && (
-          <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 text-green-700 text-sm">
+          <div className="mb-4 alert-success">
             Book added successfully! Redirecting...
           </div>
         )}

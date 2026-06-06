@@ -49,11 +49,9 @@ export function BooksPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground">Browse Books</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {data?.total ?? 0} books available
-        </p>
+      <div className="page-header mb-6">
+        <h2>Browse Books</h2>
+        <p>{data?.total ?? 0} books available</p>
       </div>
 
       {/* Filters */}
@@ -63,11 +61,11 @@ export function BooksPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search by title or author..."
-            className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="input-field flex-1"
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:bg-primary/90 transition-colors"
+            className="btn-primary"
           >
             Search
           </button>
@@ -76,7 +74,7 @@ export function BooksPage() {
         <select
           value={category}
           onChange={(e) => handleCategoryChange(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="input-field"
         >
           <option value="">All categories</option>
           <option value="textbook">Textbooks</option>
@@ -110,7 +108,7 @@ export function BooksPage() {
             {data?.items.map((book) => (
               <div
                 key={book.id}
-                className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                className="surface-card surface-card-interactive p-4 flex flex-col gap-3"
               >
                 {/* Cover placeholder */}
                 <div className="aspect-[3/4] bg-muted rounded-lg flex items-center justify-center text-4xl">
@@ -134,7 +132,7 @@ export function BooksPage() {
                     {book.price ? `₹${book.price.toFixed(2)}` : "Price unavailable"}
                   </span>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    (book.stock ?? 0) > 0 ? "bg-green-100 text-green-700": "bg-gray-200 text-gray-700"}`}>
+                    (book.stock ?? 0) > 0 ? "badge-success": "badge-neutral"}`}>
                       {book.stock != null ? `${book.stock} in stock` : "Stock unknown"}
                       </span>
                 </div>

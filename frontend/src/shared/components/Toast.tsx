@@ -18,7 +18,6 @@ export const useToastStore = create<ToastStore>((set) => ({
   add: (type, message) => {
     const id = Math.random().toString(36).slice(2)
     set((state) => ({ toasts: [...state.toasts, { id, type, message }] }))
-    // Auto-remove after 4 seconds
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }))
     }, 4000)
@@ -26,7 +25,6 @@ export const useToastStore = create<ToastStore>((set) => ({
   remove: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 }))
 
-// Convenience hook
 export function useToast() {
   const { add } = useToastStore()
   return {
@@ -38,10 +36,10 @@ export function useToast() {
 }
 
 const TOAST_STYLES: Record<ToastType, string> = {
-  success: "bg-green-50 border-green-200 text-green-800",
-  error: "bg-red-50 border-red-200 text-red-800",
-  info: "bg-blue-50 border-blue-200 text-blue-800",
-  warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
+  success: "alert-success border",
+  error: "alert-error border",
+  info: "bg-info-muted text-info border border-info/25",
+  warning: "alert-warning border",
 }
 
 const TOAST_ICONS: Record<ToastType, string> = {
@@ -51,7 +49,6 @@ const TOAST_ICONS: Record<ToastType, string> = {
   warning: "⚠️",
 }
 
-// Toast container — place this once in App.tsx
 export function ToastContainer() {
   const { toasts, remove } = useToastStore()
 
@@ -61,8 +58,8 @@ export function ToastContainer() {
         <div
           key={toast.id}
           className={`
-            flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg
-            pointer-events-auto cursor-pointer
+            flex items-start gap-3 px-4 py-3 rounded-xl shadow-card
+            pointer-events-auto cursor-pointer backdrop-blur-xl
             animate-in slide-in-from-right-5 fade-in duration-300
             ${TOAST_STYLES[toast.type]}
           `}

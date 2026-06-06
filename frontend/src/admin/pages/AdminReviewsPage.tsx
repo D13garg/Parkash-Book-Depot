@@ -10,7 +10,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 function StarRating({ rating }: { rating: number }) {
-  return <span className="text-yellow-400">{"⭐".repeat(rating)}{"☆".repeat(5 - rating)}</span>
+  return <span className="text-primary">{"⭐".repeat(rating)}{"☆".repeat(5 - rating)}</span>
 }
 
 export function AdminReviewsPage() {
@@ -35,7 +35,7 @@ export function AdminReviewsPage() {
           <h2 className="text-2xl font-bold text-foreground">Customer Reviews</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {reviews?.length ?? 0} total reviews
-            {avgRating && <span className="ml-2 text-yellow-500 font-medium">⭐ {avgRating} avg</span>}
+            {avgRating && <span className="ml-2 text-primary font-medium">⭐ {avgRating} avg</span>}
           </p>
         </div>
       </div>

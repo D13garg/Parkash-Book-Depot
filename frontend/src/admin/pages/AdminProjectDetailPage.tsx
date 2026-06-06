@@ -66,8 +66,8 @@ export function AdminProjectDetailPage() {
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Assigned To</p>
             <p className="mt-1 text-sm font-medium">
               {project.assigned_to
-                ? <span className="text-green-600">ID: {project.assigned_to.slice(-8)}</span>
-                : <span className="text-orange-500">Unassigned</span>
+                ? <span className="text-success">ID: {project.assigned_to.slice(-8)}</span>
+                : <span className="text-warning">Unassigned</span>
               }
             </p>
           </div>

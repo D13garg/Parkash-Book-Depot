@@ -7,10 +7,10 @@ import { EmptyState } from "@/shared/components/EmptyState"
 import { Pagination } from "@/shared/components/Pagination"
 
 const PRIORITY_STYLES: Record<string, string> = {
-  low:    "bg-gray-100 text-gray-600",
-  medium: "bg-blue-100 text-blue-600",
-  high:   "bg-orange-100 text-orange-600",
-  urgent: "bg-red-100 text-red-600",
+  low:    "badge-neutral",
+  medium: "badge-info",
+  high:   "badge-warning",
+  urgent: "badge-danger",
 }
 
 export function AssignedProjectsPage() {

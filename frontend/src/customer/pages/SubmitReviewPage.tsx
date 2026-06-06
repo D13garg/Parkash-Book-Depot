@@ -44,7 +44,7 @@ export function SubmitReviewPage() {
 
       <div className="bg-card border border-border rounded-xl p-6">
         {isSuccess && (
-          <div className="mb-4 px-4 py-3 rounded-lg bg-green-50 text-green-700 text-sm">
+          <div className="mb-4 alert-success">
             ✅ Review submitted! Redirecting...
           </div>
         )}
@@ -68,7 +68,7 @@ export function SubmitReviewPage() {
                   type="button"
                   onClick={() => setValue("rating", star)}
                   className={`text-2xl transition-transform hover:scale-110 ${
-                    star <= currentRating ? "text-yellow-400" : "text-gray-300"
+                    star <= currentRating ? "text-primary" : "text-muted-foreground/40"
                   }`}
                 >
                   ★

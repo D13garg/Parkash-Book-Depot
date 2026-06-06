@@ -83,8 +83,8 @@ export function AdminErrorLogsPage() {
             {data?.items.map((log) => (
               <div
                 key={log.id}
-                className={`bg-card border rounded-xl overflow-hidden transition-all
-                  ${log.level === "ERROR" ? "border-red-200" : "border-yellow-200"}`}
+                className={`surface-card overflow-hidden transition-all
+                  ${log.level === "ERROR" ? "border-destructive/30" : "border-warning/30"}`}
               >
                 {/* Main row */}
                 <div
@@ -92,11 +92,8 @@ export function AdminErrorLogsPage() {
                   onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
                 >
                   {/* Level badge */}
-                  <span className={`flex-shrink-0 mt-0.5 text-xs font-bold px-2 py-0.5 rounded-full
-                    ${log.level === "ERROR"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700"
-                    }`}
+                  <span className={`flex-shrink-0 mt-0.5 text-xs font-bold
+                    ${log.level === "ERROR" ? "badge-danger" : "badge-warning"}`}
                   >
                     {log.level}
                   </span>
@@ -110,7 +107,7 @@ export function AdminErrorLogsPage() {
                         <span className="font-mono">{log.method} {log.endpoint}</span>
                       )}
                       {log.status_code && (
-                        <span className={`font-medium ${log.status_code >= 500 ? "text-red-600" : "text-yellow-600"}`}>
+                        <span className={`font-medium ${log.status_code >= 500 ? "text-destructive" : "text-warning"}`}>
                           {log.status_code}
                         </span>
                       )}
