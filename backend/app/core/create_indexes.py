@@ -61,6 +61,15 @@ async def create_indexes(db: AsyncIOMotorDatabase) -> None:
         # Analytics: Errors in last 24h query
         await db["error_logs"].create_index([("created_at", pymongo.ASCENDING)])
 
+        # Orders indexes
+        await db["orders"].create_index([("customer_id", pymongo.ASCENDING)])
+        await db["orders"].create_index([("status", pymongo.ASCENDING)])
+        await db["orders"].create_index([("created_at", pymongo.DESCENDING)])
+        # Analytics: Order status tracking and filtering
+        await db["orders"].create_index([("status", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)])
+        # Analytics: Customer order history query
+        await db["orders"].create_index([("customer_id", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)])
+
         logger.info("✓ MongoDB indexes created successfully.")
     except Exception as e:
         logger.error(f"Failed to create indexes: {e}")

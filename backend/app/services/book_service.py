@@ -14,6 +14,7 @@ def _to_book_response(book: BookModel) -> BookResponse:
     return BookResponse(
         id=book.id, title=book.title, authors=book.authors,
         categories=book.categories, price=book.price, stock=book.stock,
+        low_stock_threshold=book.low_stock_threshold,
         is_low_stock=book.stock < book.low_stock_threshold,
         publisher=book.publisher, isbn=book.isbn, description=book.description,
         cover_image_url=book.cover_image_url, edition=book.edition,

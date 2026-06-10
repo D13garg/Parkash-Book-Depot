@@ -35,6 +35,7 @@ class UpdateBookRequest(BaseModel):
     edition: Optional[str] = None
     language: Optional[str] = None
     low_stock_threshold: Optional[int] = Field(default=None, ge=0)
+    stock: Optional[int] = Field(default=None, ge=0)
 
 
 class UpdateStockRequest(BaseModel):
@@ -51,6 +52,7 @@ class BookResponse(BaseModel):
     categories: List[str]
     price: float
     stock: int
+    low_stock_threshold: int
     is_low_stock: bool          # computed field — True if stock < low_stock_threshold
     publisher: Optional[str] = None
     isbn: Optional[str] = None

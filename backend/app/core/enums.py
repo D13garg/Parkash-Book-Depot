@@ -57,3 +57,26 @@ def is_valid_request_transition(current: ProjectRequestStatus, next_status: Proj
 
 def is_valid_project_transition(current: ProjectStatus, next_status: ProjectStatus) -> bool:
     return next_status in PROJECT_TRANSITIONS.get(current, [])
+
+
+class OrderStatus(str, Enum):
+    PENDING    = "pending"
+    CONFIRMED  = "confirmed"
+    PROCESSING = "processing"
+    SHIPPED    = "shipped"
+    DELIVERED  = "delivered"
+    CANCELLED  = "cancelled"
+
+
+ORDER_TRANSITIONS = {
+    OrderStatus.PENDING:    [OrderStatus.CONFIRMED,  OrderStatus.CANCELLED],
+    OrderStatus.CONFIRMED:  [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+    OrderStatus.PROCESSING: [OrderStatus.SHIPPED],
+    OrderStatus.SHIPPED:    [OrderStatus.DELIVERED],
+    OrderStatus.DELIVERED:  [],
+    OrderStatus.CANCELLED:  [],
+}
+
+
+def is_valid_order_transition(current: OrderStatus, next_status: OrderStatus) -> bool:
+    return next_status in ORDER_TRANSITIONS.get(current, [])
