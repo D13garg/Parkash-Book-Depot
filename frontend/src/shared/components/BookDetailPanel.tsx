@@ -1,4 +1,3 @@
-import { X } from "lucide-react"
 import { useCartStore } from "@/stores/cartStore"
 import type { Book } from "@/shared/types"
 
@@ -43,9 +42,9 @@ export function BookDetailPanel({ book, isOpen, onClose }: BookDetailPanelProps)
           <h2 className="text-lg font-semibold">Book Details</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-muted rounded-lg transition-colors"
+            className="p-1 hover:bg-muted rounded-lg transition-colors text-lg"
           >
-            <X size={20} />
+            ✕
           </button>
         </div>
 

@@ -4,7 +4,6 @@ import { LoadingSpinner } from "@/shared/components/LoadingSpinner"
 import { EmptyState } from "@/shared/components/EmptyState"
 import { StatusBadge } from "@/shared/components/StatusBadge"
 import { Pagination } from "@/shared/components/Pagination"
-import type { Order } from "@/shared/hooks/useOrders"
 
 const ORDER_STATUSES = [
   "pending",
@@ -355,11 +354,11 @@ export function AdminOrdersPage() {
       )}
 
       {/* Pagination */}
-      {data && data.pages > 1 && (
+      {data && data.total_pages > 1 && (
         <div className="mt-8">
           <Pagination
-            currentPage={page}
-            totalPages={data.pages}
+            page={page}
+            totalPages={data.total_pages}
             onPageChange={setPage}
           />
         </div>
