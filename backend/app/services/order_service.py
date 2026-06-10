@@ -17,7 +17,11 @@ from app.services.audit_log_service import audit
 def _to_response(o: OrderModel) -> OrderResponse:
     return OrderResponse(
         id=o.id, customer_id=o.customer_id, customer_name=o.customer_name,
-        items=o.items, total_amount=o.total_amount, status=o.status,
+        items=[{
+            "book_id": item.book_id, "title": item.title,
+            "price": item.price, "quantity": item.quantity, "subtotal": item.subtotal,
+        } for item in o.items],
+        total_amount=o.total_amount, status=o.status,
         delivery_address=o.delivery_address, phone=o.phone,
         notes=o.notes, created_at=o.created_at, updated_at=o.updated_at,
     )
