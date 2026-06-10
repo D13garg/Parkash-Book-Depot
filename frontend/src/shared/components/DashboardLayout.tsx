@@ -2,6 +2,7 @@ import { useState } from "react"
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/stores/authStore"
 import { NotificationBell } from "./NotificationBell"
+import { CartIcon } from "./CartIcon"
 import type { ReactNode } from "react"
 
 interface NavItem {
@@ -101,7 +102,10 @@ export function DashboardLayout({ children, navItems, title }: DashboardLayoutPr
               <p className="text-xs text-muted-foreground hidden sm:block">Welcome back, {user?.name?.split(" ")[0]}</p>
             </div>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-4">
+            {user?.role === "customer" && <CartIcon />}
+            <NotificationBell />
+          </div>
         </header>
 
         <main className="flex-1 p-6 page-enter">

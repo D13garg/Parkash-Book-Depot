@@ -17,6 +17,14 @@ export type ProjectStatus =
   | "completed"
   | "cancelled"
 
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+
 // ── User ──────────────────────────────────────────────────────────────────────
 
 export interface User {
@@ -113,6 +121,30 @@ export interface ProjectUpdate {
   status_changed_to: ProjectStatus | null
   attachments: string[]
   created_at: string
+}
+
+// ── Orders ────────────────────────────────────────────────────────────────────
+
+export interface OrderItem {
+  book_id: string
+  title: string
+  price: number
+  quantity: number
+  subtotal: number
+}
+
+export interface Order {
+  id: string
+  customer_id: string
+  customer_name: string
+  items: OrderItem[]
+  total_amount: number
+  status: OrderStatus
+  delivery_address: string
+  phone: string
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────

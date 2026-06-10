@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import { DashboardLayout }   from "@/shared/components/DashboardLayout"
 import { BooksPage }         from "./BooksPage"
+import { MyOrdersPage }      from "./MyOrdersPage"
+import { CartPage }          from "./CartPage"
 import { MyRequestsPage }    from "./MyRequestsPage"
 import { SubmitRequestPage } from "./SubmitRequestPage"
 import { ProfilePage }       from "./ProfilePage"
@@ -11,6 +13,8 @@ import { GalleryPage }       from "./GalleryPage.tsx"
 
 const NAV_ITEMS = [
   { label: "Browse Books",   path: "/customer/books",          icon: "📚" },
+  { label: "Cart",           path: "/customer/cart",           icon: "🛒" },
+  { label: "My Orders",      path: "/customer/orders",         icon: "📦" },
   { label: "My Requests",    path: "/customer/requests",       icon: "📋" },
   { label: "Submit Request", path: "/customer/submit-request", icon: "➕" },
   { label: "My Reviews",     path: "/customer/reviews",        icon: "⭐" },
@@ -25,6 +29,8 @@ export function CustomerDashboard() {
       <Routes>
         <Route index element={<Navigate to="books" replace />} />
         <Route path="books"          element={<BooksPage />} />
+        <Route path="cart"           element={<CartPage />} />
+        <Route path="orders"         element={<MyOrdersPage />} />
         <Route path="requests"       element={<MyRequestsPage />} />
         <Route path="submit-request" element={<SubmitRequestPage />} />
         <Route path="reviews"        element={<MyReviewsPage />} />

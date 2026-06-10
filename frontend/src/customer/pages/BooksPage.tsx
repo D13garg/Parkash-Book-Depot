@@ -3,6 +3,8 @@ import { useBooks } from "@/shared/hooks/useBooks"
 import { LoadingSpinner } from "@/shared/components/LoadingSpinner"
 import { EmptyState } from "@/shared/components/EmptyState"
 import { Pagination } from "@/shared/components/Pagination"
+import { BookDetailPanel } from "@/shared/components/BookDetailPanel"
+import type { Book } from "@/shared/types"
 
 export function BooksPage() {
   const [page, setPage] = useState(1)
@@ -10,6 +12,8 @@ export function BooksPage() {
   const [searchInput, setSearchInput] = useState("")
   const [category, setCategory] = useState("")
   const [inStockOnly, setInStockOnly] = useState(false)
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   const { data, isLoading, isError } = useBooks({
     page,
@@ -106,9 +110,13 @@ export function BooksPage() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {data?.items.map((book) => (
-              <div
+              <button
                 key={book.id}
-                className="surface-card surface-card-interactive p-4 flex flex-col gap-3"
+                onClick={() => {
+                  setSelectedBook(book)
+                  setIsPanelOpen(true)
+                }}
+                className="surface-card surface-card-interactive p-4 flex flex-col gap-3 text-left hover:shadow-lg transition-shadow duration-200"
               >
                 {/* Cover placeholder */}
                 <div className="aspect-[3/4] bg-muted rounded-lg flex items-center justify-center text-4xl">
@@ -149,7 +157,7 @@ export function BooksPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              </button>
             ))}
           </div>
 
@@ -160,6 +168,15 @@ export function BooksPage() {
           />
         </>
       )}
+
+      <BookDetailPanel
+        book={selectedBook}
+        isOpen={isPanelOpen}
+        onClose={() => {
+          setIsPanelOpen(false)
+          setSelectedBook(null)
+        }}
+      />
     </div>
   )
 }

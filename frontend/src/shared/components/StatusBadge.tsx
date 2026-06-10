@@ -1,6 +1,6 @@
-import type { ProjectRequestStatus, ProjectStatus } from "@/shared/types"
+import type { ProjectRequestStatus, ProjectStatus, OrderStatus } from "@/shared/types"
 
-type AnyStatus = ProjectRequestStatus | ProjectStatus
+type AnyStatus = ProjectRequestStatus | ProjectStatus | OrderStatus
 
 const STATUS_STYLES: Record<AnyStatus, string> = {
   submitted:             "badge-info",
@@ -14,6 +14,10 @@ const STATUS_STYLES: Record<AnyStatus, string> = {
   waiting_supplier:      "badge-warning",
   completed:             "badge-success",
   cancelled:             "badge-danger",
+  confirmed:             "badge-success",
+  processing:            "badge-warning",
+  shipped:               "badge-info",
+  delivered:             "badge-success",
 }
 
 const STATUS_LABELS: Record<AnyStatus, string> = {
@@ -28,6 +32,10 @@ const STATUS_LABELS: Record<AnyStatus, string> = {
   waiting_supplier:      "Waiting Supplier",
   completed:             "Completed",
   cancelled:             "Cancelled",
+  confirmed:             "Confirmed",
+  processing:            "Processing",
+  shipped:               "Shipped",
+  delivered:             "Delivered",
 }
 
 interface StatusBadgeProps {
