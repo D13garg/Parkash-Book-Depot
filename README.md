@@ -49,6 +49,7 @@ Parkash-Book-Depot/
 │       ├── models/                      # MongoDB document shapes
 │       │   ├── user.py
 │       │   ├── book.py
+│       │   ├── order.py
 │       │   ├── project_request.py
 │       │   ├── project.py
 │       │   ├── project_update.py
@@ -61,6 +62,7 @@ Parkash-Book-Depot/
 │       ├── schemas/                     # API request/response shapes
 │       │   ├── user.py
 │       │   ├── book.py
+│       │   ├── order.py
 │       │   ├── project_request.py
 │       │   ├── project.py
 │       │   ├── review.py
@@ -73,6 +75,7 @@ Parkash-Book-Depot/
 │       ├── repositories/                # MongoDB queries only
 │       │   ├── user_repository.py
 │       │   ├── book_repository.py
+│       │   ├── order_repository.py
 │       │   ├── project_request_repository.py
 │       │   ├── project_repository.py
 │       │   ├── project_update_repository.py
@@ -85,6 +88,7 @@ Parkash-Book-Depot/
 │       ├── services/                    # business logic
 │       │   ├── auth_service.py
 │       │   ├── book_service.py
+│       │   ├── order_service.py
 │       │   ├── project_request_service.py
 │       │   ├── project_service.py
 │       │   ├── review_service.py
@@ -113,6 +117,7 @@ Parkash-Book-Depot/
 │               ├── auth.py
 │               ├── users.py
 │               ├── books.py
+│               ├── orders.py
 │               ├── project_requests.py
 │               ├── projects.py
 │               ├── reviews.py
@@ -140,6 +145,8 @@ Parkash-Book-Depot/
         ├── customer/pages/
         │   ├── CustomerDashboard.tsx
         │   ├── BooksPage.tsx
+        │   ├── CartPage.tsx
+        │   ├── MyOrdersPage.tsx
         │   ├── MyRequestsPage.tsx
         │   ├── SubmitRequestPage.tsx
         │   ├── MyReviewPage.tsx
@@ -157,6 +164,7 @@ Parkash-Book-Depot/
         │   ├── RequestQueuePage.tsx
         │   ├── AllProjectsPage.tsx
         │   ├── AdminProjectDetailPage.tsx
+        │   ├── AdminOrdersPage.tsx
         │   ├── BookManagementPage.tsx
         │   ├── AddBookPage.tsx
         │   ├── AdminReviewsPage.tsx
@@ -168,6 +176,8 @@ Parkash-Book-Depot/
         ├── shared/
         │   ├── components/
         │   │   ├── DashboardLayout.tsx
+        │   │   ├── BookDetailPanel.tsx
+        │   │   ├── CartIcon.tsx
         │   │   ├── NotificationBell.tsx
         │   │   ├── StatusBadge.tsx
         │   │   ├── Pagination.tsx
@@ -178,6 +188,7 @@ Parkash-Book-Depot/
         │   ├── hooks/
         │   │   ├── useAuth.ts
         │   │   ├── useBooks.ts
+        │   │   ├── useOrders.ts
         │   │   ├── useProjectRequests.ts
         │   │   ├── useProjects.ts
         │   │   ├── useReviews.ts
@@ -193,7 +204,8 @@ Parkash-Book-Depot/
         │   └── types/
         │       └── index.ts
         ├── stores/
-        │   └── authStore.ts
+        │   ├── authStore.ts
+        │   └── cartStore.ts
         ├── providers/
         │   └── QueryProvider.tsx
         └── router/
@@ -219,8 +231,7 @@ Parkash-Book-Depot/
 |--------|--------|-----------|
 | Auth | `/api/v1/auth` | register, login, refresh, me |
 | Users | `/api/v1/users` | associates list |
-| Books | `/api/v1/books` | CRUD, stock management, low-stock |
-| Project Requests | `/api/v1/project-requests` | submit, list, status update |
+| Books | `/api/v1/books` | CRUD, stock management, low-stock || Orders | `/api/v1/orders` | place, my orders, all orders (admin), status update || Project Requests | `/api/v1/project-requests` | submit, list, status update |
 | Projects | `/api/v1/projects` | create, assign, status, updates timeline |
 | Reviews | `/api/v1/reviews` | submit, my reviews, all reviews (admin) |
 | Gallery | `/api/v1/gallery` | upload, caption, delete |
@@ -232,6 +243,31 @@ Parkash-Book-Depot/
 
 ---
 
+## Order Management
+
+**Customer Features:**
+- Browse books with detailed view drawer panel
+- Add books to cart (Zustand-based state management)
+- Checkout with delivery address & notes
+- View order history with status tracking
+- Track real-time delivery status
+
+**Admin Features:**
+- View all customer orders with pagination
+- Filter orders by status and date range
+- Update order status through state machine
+- Approve/reject orders based on stock availability
+- Audit trail of all order modifications
+
+**Order Statuses:**
+- `pending` → New order created
+- `confirmed` → Order approved
+- `processing` → Being packed/prepared
+- `shipped` → In transit
+- `delivered` → Order received
+- `cancelled` → Cancelled by customer or admin
+
+---
 
 ## Security Features
 
@@ -263,9 +299,9 @@ Parkash-Book-Depot/
 
 ```
 users               project_requests    projects
-project_updates     books               reviews
-gallery             notifications       audit_logs
-error_logs          metrics_hourly
+project_updates     books               orders
+reviews             gallery             notifications
+audit_logs          error_logs          metrics_hourly
 ```
 
 ---
@@ -282,6 +318,12 @@ submitted → under_review → accepted → converted_to_project
 ```
 pending → assigned → in_progress → waiting_supplier → completed
        → cancelled (from any state)
+```
+
+**Order Flow:**
+```
+pending → confirmed → processing → shipped → delivered
+       → cancelled (from any state before delivered)
 ```
 
 ---
@@ -337,3 +379,4 @@ Covers: security utilities, state machine transitions, RBAC permissions.
 ---
 
 *Built with FastAPI + React. Deployed on Railway + Vercel.*
+*CI/CD pipeline implemented.*
