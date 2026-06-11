@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAdminProject, useAdminProjectUpdates, useAssignAssociate, useUpdateProjectStatus } from "@/shared/hooks/useAdminProjects"
+import { useAssociates } from "@/shared/hooks/useAssociates"
 import { StatusBadge } from "@/shared/components/StatusBadge"
 import { LoadingSpinner } from "@/shared/components/LoadingSpinner"
 import { EmptyState } from "@/shared/components/EmptyState"
@@ -23,6 +24,7 @@ export function AdminProjectDetailPage() {
   const { data: updates, isLoading: updatesLoading } = useAdminProjectUpdates(projectId!)
   const { mutate: assign, isPending: isAssigning } = useAssignAssociate(projectId!)
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateProjectStatus(projectId!)
+  const { data: associates, isLoading: associatesLoading } = useAssociates()
 
   const [associateId, setAssociateId] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus | "">("")
@@ -66,7 +68,9 @@ export function AdminProjectDetailPage() {
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Assigned To</p>
             <p className="mt-1 text-sm font-medium">
               {project.assigned_to
-                ? <span className="text-success">ID: {project.assigned_to.slice(-8)}</span>
+                ? <span className="text-success">
+                    {associates?.find(a => a.id === project.assigned_to)?.name ?? `ID: ${project.assigned_to.slice(-8)}`}
+                  </span>
                 : <span className="text-warning">Unassigned</span>
               }
             </p>
@@ -90,12 +94,21 @@ export function AdminProjectDetailPage() {
       <div className="bg-card border border-border rounded-xl p-6">
         <h3 className="font-semibold text-foreground mb-4">Assign Associate</h3>
         <div className="flex gap-3">
-          <input
+          <select
             value={associateId}
             onChange={(e) => setAssociateId(e.target.value)}
-            placeholder="Paste associate user ID..."
-            className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+            disabled={associatesLoading}
+            className="flex-1 px-3 py-2.5 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          >
+            <option value="">
+              {associatesLoading ? "Loading associates..." : "Select an associate..."}
+            </option>
+            {associates?.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} — {a.email}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => { if (associateId.trim()) assign(associateId.trim()) }}
             disabled={isAssigning || !associateId.trim()}
@@ -104,9 +117,9 @@ export function AdminProjectDetailPage() {
             {isAssigning ? "Assigning..." : "Assign"}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          You can find user IDs in the users collection of your database.
-        </p>
+        {associates?.length === 0 && !associatesLoading && (
+          <p className="text-xs text-warning mt-2">No active associates found. Create an associate account first.</p>
+        )}
       </div>
 
       {/* Update status */}
