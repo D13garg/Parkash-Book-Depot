@@ -70,6 +70,27 @@ async def create_indexes(db: AsyncIOMotorDatabase) -> None:
         # Analytics: Customer order history query
         await db["orders"].create_index([("customer_id", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)])
 
+        # OTP indexes
+        # TTL index — MongoDB auto-deletes expired OTPs (expires_at + 0s grace)
+        await db["otps"].create_index(
+            [("expires_at", pymongo.ASCENDING)],
+            expireAfterSeconds=0,
+            name="otp_ttl"
+        )
+        # Lookup by email + purpose + used — used in every verify call
+        await db["otps"].create_index([
+            ("email", pymongo.ASCENDING),
+            ("purpose", pymongo.ASCENDING),
+            ("used", pymongo.ASCENDING),
+            ("expires_at", pymongo.DESCENDING),
+        ])
+        # Rate limit check — count sends per email per hour
+        await db["otps"].create_index([
+            ("email", pymongo.ASCENDING),
+            ("purpose", pymongo.ASCENDING),
+            ("created_at", pymongo.DESCENDING),
+        ])
+
         logger.info("✓ MongoDB indexes created successfully.")
     except Exception as e:
         logger.error(f"Failed to create indexes: {e}")

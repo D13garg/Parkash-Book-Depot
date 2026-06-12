@@ -1,37 +1,84 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
+import { useEffect, useRef } from "react"
 import { useAuth } from "@/shared/hooks/useAuth"
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: { client_id: string; callback: (res: { credential: string }) => void }) => void
+          renderButton: (el: HTMLElement, config: object) => void
+        }
+      }
+    }
+  }
+}
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
 
 const loginSchema = z.object({
   email:    z.string().email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
 })
-
 type LoginForm = z.infer<typeof loginSchema>
 
-export function LoginPage() {
-  const { login, isLoggingIn, loginError } = useAuth()
+function getApiError(error: unknown): string | null {
+  if (!error) return null
+  const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+  if (typeof detail === "string") return detail
+  if (Array.isArray(detail)) return detail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(". ")
+  return "Login failed. Please try again."
+}
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
+export function LoginPage() {
+  const { login, isLoggingIn, loginError, googleAuth, isGoogleAuthing, googleAuthError } = useAuth()
+  const location = useLocation()
+  const googleBtnRef = useRef<HTMLDivElement>(null)
+
+  const successMessage = (location.state as { message?: string })?.message
+
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  })
 
   const onSubmit = (data: LoginForm) => login(data)
+  const errorMessage = getApiError(loginError) ?? getApiError(googleAuthError)
 
-  const apiDetail = (loginError as { response?: { data?: { detail?: unknown } } })
-    ?.response?.data?.detail
+  // Load Google Identity Services script and render button
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return
 
-  const errorMessage = loginError
-    ? typeof apiDetail === "string"
-      ? apiDetail
-      : Array.isArray(apiDetail)
-        ? apiDetail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(". ")
-        : "Login failed. Please try again."
-    : null
+    const initGoogle = () => {
+      window.google?.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (res) => googleAuth({ id_token: res.credential }),
+      })
+      if (googleBtnRef.current) {
+        window.google?.accounts.id.renderButton(googleBtnRef.current, {
+          theme: "filled_black",
+          size: "large",
+          width: 400,
+          text: "signin_with",
+          shape: "rectangular",
+        })
+      }
+    }
+
+    if (window.google) {
+      initGoogle()
+    } else {
+      const script = document.createElement("script")
+      script.src = "https://accounts.google.com/gsi/client"
+      script.async = true
+      script.defer = true
+      script.onload = initGoogle
+      document.body.appendChild(script)
+    }
+  }, [googleAuth])
 
   return (
     <div className="min-h-screen mesh-bg flex items-center justify-center px-4 relative overflow-hidden">
@@ -48,53 +95,54 @@ export function LoginPage() {
         </div>
 
         <div className="glass-panel rounded-2xl p-8 shadow-card">
-          {errorMessage && (
-            <div className="mb-5 alert-error">
-              {errorMessage}
+          {successMessage && (
+            <div className="mb-5 px-4 py-3 rounded-lg bg-success/10 border border-success/30 text-success text-sm">
+              {successMessage}
             </div>
           )}
+          {errorMessage && <div className="mb-5 alert-error">{errorMessage}</div>}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
-              <input
-                {...register("email")}
-                type="email"
-                placeholder="you@example.com"
-                className="input-field"
-              />
-              {errors.email && (
-                <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>
-              )}
+              <input {...register("email")} type="email" placeholder="you@example.com" className="input-field" />
+              {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
-              <input
-                {...register("password")}
-                type="password"
-                placeholder="••••••••"
-                className="input-field"
-              />
-              {errors.password && (
-                <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
-              )}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-foreground">Password</label>
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              <input {...register("password")} type="password" placeholder="••••••••" className="input-field" />
+              {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoggingIn}
-              className="w-full btn-primary"
-            >
+            <button type="submit" disabled={isLoggingIn || isGoogleAuthing} className="w-full btn-primary">
               {isLoggingIn ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
+          {/* Google Sign In */}
+          {GOOGLE_CLIENT_ID && (
+            <>
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <div ref={googleBtnRef} className="flex justify-center" />
+            </>
+          )}
+
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link to="/register" className="text-primary font-semibold hover:underline">
-              Create one
-            </Link>
+            <Link to="/register" className="text-primary font-semibold hover:underline">Create one</Link>
           </p>
         </div>
       </div>

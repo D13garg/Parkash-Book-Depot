@@ -13,27 +13,23 @@ const registerSchema = z.object({
 
 type RegisterForm = z.infer<typeof registerSchema>
 
+function getApiError(error: unknown): string | null {
+  if (!error) return null
+  const detail = (error as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+  if (typeof detail === "string") return detail
+  if (Array.isArray(detail)) return detail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(". ")
+  return "Registration failed. Please try again."
+}
+
 export function RegisterPage() {
-  const { register: registerUser, isRegistering, registerError } = useAuth()
+  const { registerInitiate, registerInitiateError, isRegisterInitiating } = useAuth()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterForm>({ resolver: zodResolver(registerSchema) })
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+  })
 
-  const onSubmit = (data: RegisterForm) => registerUser(data)
-
-  const apiDetail = (registerError as { response?: { data?: { detail?: unknown } } })
-    ?.response?.data?.detail
-
-  const errorMessage = registerError
-    ? typeof apiDetail === "string"
-      ? apiDetail
-      : Array.isArray(apiDetail)
-        ? apiDetail.map((e: { msg?: string }) => e.msg).filter(Boolean).join(". ")
-        : "Registration failed. Please try again."
-    : null
+  const onSubmit = (data: RegisterForm) => registerInitiate(data)
+  const errorMessage = getApiError(registerInitiateError)
 
   return (
     <div className="min-h-screen mesh-bg flex items-center justify-center px-4 py-10 relative overflow-hidden">
@@ -50,78 +46,46 @@ export function RegisterPage() {
         </div>
 
         <div className="glass-panel rounded-2xl p-8 shadow-card">
-          {errorMessage && (
-            <div className="mb-5 alert-error">
-              {errorMessage}
-            </div>
-          )}
+          {errorMessage && <div className="mb-5 alert-error">{errorMessage}</div>}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
-              <input
-                {...register("name")}
-                type="text"
-                placeholder="Your full name"
-                className="input-field"
-              />
-              {errors.name && (
-                <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>
-              )}
+              <input {...register("name")} type="text" placeholder="Your full name" className="input-field" />
+              {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
-              <input
-                {...register("email")}
-                type="email"
-                placeholder="you@example.com"
-                className="input-field"
-              />
-              {errors.email && (
-                <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>
-              )}
+              <input {...register("email")} type="email" placeholder="you@example.com" className="input-field" />
+              {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
-              <input
-                {...register("password")}
-                type="password"
-                placeholder="Min. 8 characters"
-                className="input-field"
-              />
-              {errors.password && (
-                <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>
-              )}
+              <input {...register("password")} type="password" placeholder="Min. 8 characters" className="input-field" />
+              {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
                 Phone <span className="text-muted-foreground font-normal">(optional)</span>
               </label>
-              <input
-                {...register("phone")}
-                type="tel"
-                placeholder="+91 98765 43210"
-                className="input-field"
-              />
+              <input {...register("phone")} type="tel" placeholder="+91 98765 43210" className="input-field" />
             </div>
 
-            <button
-              type="submit"
-              disabled={isRegistering}
-              className="w-full btn-primary"
-            >
-              {isRegistering ? "Creating account..." : "Create account"}
+            <button type="submit" disabled={isRegisterInitiating} className="w-full btn-primary">
+              {isRegisterInitiating ? "Sending code..." : "Continue"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-4 text-xs text-center text-muted-foreground">
+            A 4-digit verification code will be sent to your email.
+          </p>
+
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="text-primary font-semibold hover:underline">
-              Sign in
-            </Link>
+            <Link to="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
       </div>

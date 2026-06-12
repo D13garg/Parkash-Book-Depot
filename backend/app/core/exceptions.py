@@ -52,3 +52,11 @@ class InvalidStateTransitionException(BadRequestException):
         super().__init__(
             detail=f"Invalid state transition from '{current}' to '{attempted}'.",
         )
+
+
+class TooManyRequestsException(AppException):
+    def __init__(self, detail: str = "Too many requests. Please try again later."):
+        super().__init__(
+            status_code=429,
+            detail=detail,
+        )

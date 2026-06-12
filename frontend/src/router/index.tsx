@@ -2,13 +2,17 @@ import { createBrowserRouter, Navigate } from "react-router-dom"
 import { ProtectedRoute }        from "./ProtectedRoute"
 import { LoginPage }             from "@/auth/pages/LoginPage"
 import { RegisterPage }          from "@/auth/pages/RegisterPage"
+import { VerifyOTPPage }         from "@/auth/pages/VerifyOTPPage"
+import { ForgotPasswordPage }    from "@/auth/pages/ForgotPasswordPage"
 import { CustomerDashboard }     from "@/customer/pages/CustomerDashboard"
 import { AssociateDashboard }    from "@/associate/pages/AssociateDashboard"
 import { AdminDashboard }        from "@/admin/pages/AdminDashboard"
 
 export const router = createBrowserRouter([
-  { path: "/login",    element: <LoginPage /> },
-  { path: "/register", element: <RegisterPage /> },
+  { path: "/login",            element: <LoginPage /> },
+  { path: "/register",         element: <RegisterPage /> },
+  { path: "/verify-otp",       element: <VerifyOTPPage /> },
+  { path: "/forgot-password",  element: <ForgotPasswordPage /> },
 
   {
     path: "/customer/*",

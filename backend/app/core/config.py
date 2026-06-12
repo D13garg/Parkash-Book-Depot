@@ -42,6 +42,17 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = Field(...)
     CLOUDINARY_API_SECRET: str = Field(...)
 
+    # Email (SMTP)
+    SMTP_HOST: str = Field(default="smtp.gmail.com")
+    SMTP_PORT: int = Field(default=587)
+    SMTP_USER: str = Field(...)
+    SMTP_PASSWORD: str = Field(...)        # Gmail: use an App Password, not your real password
+    SMTP_FROM: str = Field(...)            # e.g. noreply@parkashbookdepot.com
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = Field(...)
+    GOOGLE_CLIENT_SECRET: str = Field(...)
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_must_be_strong(cls, v: str) -> str:

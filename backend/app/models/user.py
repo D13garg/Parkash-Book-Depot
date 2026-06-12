@@ -13,7 +13,7 @@ class UserModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     name: str
     email: EmailStr
-    hashed_password: str
+    hashed_password: Optional[str] = None   # None for Google OAuth accounts
     role: UserRole = UserRole.CUSTOMER
     is_active: bool = True
     phone: Optional[str] = None
