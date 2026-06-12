@@ -1,19 +1,34 @@
 name: Tests
+
 on: [push]
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - run: pip install -r backend/requirements.txt
+
       - run: pytest backend/tests/
         env:
           SECRET_KEY: test-secret-key-for-ci-that-is-long-enough-32chars
           PEPPER: test-pepper-for-ci-that-is-long-enough-32chars
+
           MONGODB_URL: mongodb://localhost:27017
+
           CLOUDINARY_CLOUD_NAME: test
           CLOUDINARY_API_KEY: test
           CLOUDINARY_API_SECRET: test
+
+          SMTP_USER: test@example.com
+          SMTP_PASSWORD: test-password
+          SMTP_FROM: test@example.com
+
+          GOOGLE_CLIENT_ID: test-client-id
+          GOOGLE_CLIENT_SECRET: test-client-secret
