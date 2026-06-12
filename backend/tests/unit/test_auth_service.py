@@ -84,7 +84,7 @@ class TestRegister:
             result = await AuthService(mock_db).register_verify(
                 OTPVerifyRequest(
                     email="john@gmail.com",
-                    code="123456"
+                    code="1234"
                 )
             )
 
