@@ -88,6 +88,37 @@ class BookRepository:
     async def update_stock(self, book_id: str, new_stock: int) -> Optional[BookModel]:
         return await self.update(book_id, {"stock": new_stock})
 
+    async def decrement_stock_atomic(self, book_id: str, quantity: int) -> Optional[BookModel]:
+        """
+        Atomically decrement stock only if sufficient stock exists.
+        Uses findOneAndUpdate with $inc and a floor condition — prevents race conditions
+        where two simultaneous orders both pass the stock check then both decrement.
+        Returns the updated book, or None if stock was insufficient (concurrent order beat us).
+        """
+        doc = await self.collection.find_one_and_update(
+            {
+                "_id": ObjectId(book_id),
+                "is_active": True,
+                "stock": {"$gte": quantity},   # atomic floor check
+            },
+            {"$inc": {"stock": -quantity}, "$set": {"updated_at": datetime.now(timezone.utc)}},
+            return_document=True,
+        )
+        if doc is None:
+            return None
+        return self._doc_to_model(doc)
+
+    async def increment_stock_atomic(self, book_id: str, quantity: int) -> Optional[BookModel]:
+        """Atomically restore stock (used on order cancellation)."""
+        doc = await self.collection.find_one_and_update(
+            {"_id": ObjectId(book_id), "is_active": True},
+            {"$inc": {"stock": quantity}, "$set": {"updated_at": datetime.now(timezone.utc)}},
+            return_document=True,
+        )
+        if doc is None:
+            return None
+        return self._doc_to_model(doc)
+
     async def find_low_stock(self) -> list[BookModel]:
         """Returns all active books where stock < low_stock_threshold."""
         pipeline = [

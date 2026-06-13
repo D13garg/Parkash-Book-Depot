@@ -49,7 +49,13 @@ class OrderService:
                 "book_id": book.id, "title": book.title,
                 "price": book.price, "quantity": item.quantity, "subtotal": subtotal,
             })
-            await self.book_repo.update_stock(book.id, book.stock - item.quantity)
+            # Atomic decrement — if another order grabbed the last copy between
+            # our check above and this update, decrement_stock_atomic returns None
+            updated_book = await self.book_repo.decrement_stock_atomic(book.id, item.quantity)
+            if updated_book is None:
+                raise BadRequestException(
+                    f"'{book.title}' just went out of stock. Please refresh and try again."
+                )
 
         order = await self.order_repo.create({
             "customer_id": current_user.id, "customer_name": current_user.name,
@@ -94,6 +100,42 @@ class OrderService:
             page_size=page_size, total_pages=math.ceil(total/page_size) if total > 0 else 1,
         )
 
+    async def cancel_order(self, order_id: str, current_user: UserModel) -> OrderResponse:
+        order = await self.order_repo.find_by_id(order_id)
+        if not order:
+            raise NotFoundException("Order")
+
+        # Only the customer who placed it can cancel (admins use update_status)
+        if order.customer_id != current_user.id:
+            raise ForbiddenException()
+
+        # Only pending or confirmed orders can be cancelled by customer
+        if order.status not in [OrderStatus.PENDING.value, OrderStatus.CONFIRMED.value]:
+            raise BadRequestException(
+                f"Orders in '{order.status}' status cannot be cancelled. "
+                f"Only pending or confirmed orders can be cancelled."
+            )
+
+        # Atomically restore stock for every item
+        for item in order.items:
+            await self.book_repo.increment_stock_atomic(item.book_id, item.quantity)
+
+        updated = await self.order_repo.update_status(order_id, OrderStatus.CANCELLED.value)
+
+        await notify(
+            db=self.db, user_id=order.customer_id, type="order_status_updated",
+            message=f"Your order #{order_id[:8].upper()} has been cancelled and stock restored.",
+            link="/customer/orders",
+        )
+        await audit(
+            db=self.db, actor_id=current_user.id, actor_name=current_user.name,
+            actor_role=current_user.role, action="order_cancelled",
+            description=f"Customer cancelled order #{order_id[:8].upper()} — stock restored for {len(order.items)} item(s)",
+            entity_type="order", entity_id=order_id,
+            metadata={"total": order.total_amount, "items": len(order.items)},
+        )
+        return _to_response(updated)
+
     async def update_status(self, order_id: str, data: UpdateOrderStatusRequest, current_user: UserModel) -> OrderResponse:
         order = await self.order_repo.find_by_id(order_id)
         if not order: raise NotFoundException("Order")
@@ -104,6 +146,12 @@ class OrderService:
             raise BadRequestException(f"Invalid status: {data.status}")
         if not is_valid_order_transition(current, new):
             raise InvalidStateTransitionException(current=order.status, attempted=data.status)
+
+        # If admin is cancelling, atomically restore stock for all items
+        if new == OrderStatus.CANCELLED:
+            for item in order.items:
+                await self.book_repo.increment_stock_atomic(item.book_id, item.quantity)
+
         updated = await self.order_repo.update_status(order_id, data.status)
         await notify(
             db=self.db, user_id=order.customer_id, type="order_status_updated",

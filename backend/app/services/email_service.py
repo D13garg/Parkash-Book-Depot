@@ -88,3 +88,4 @@ async def send_otp_email(
         raise RuntimeError(
             "Failed to send verification email. Please try again."
         ) from e
+    

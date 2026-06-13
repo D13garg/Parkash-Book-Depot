@@ -50,6 +50,16 @@ async def get_all_orders(
     return await OrderService(db).get_all_orders(status, page, page_size)
 
 
+@router.patch("/{order_id}/cancel", response_model=OrderResponse)
+async def cancel_order(
+    order_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """Customer cancels their own pending/confirmed order. Stock is restored automatically."""
+    return await OrderService(db).cancel_order(order_id, current_user)
+
+
 @router.patch("/{order_id}/status", response_model=OrderResponse)
 async def update_order_status(
     order_id: str,

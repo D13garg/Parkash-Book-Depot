@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useMyOrders } from "@/shared/hooks/useOrders"
+import { useMyOrders, useCancelOrder } from "@/shared/hooks/useOrders"
 import { LoadingSpinner } from "@/shared/components/LoadingSpinner"
 import { EmptyState } from "@/shared/components/EmptyState"
 import { StatusBadge } from "@/shared/components/StatusBadge"
@@ -10,6 +10,9 @@ export function MyOrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
 
   const { data, isLoading, isError } = useMyOrders(page, 10)
+  const { mutate: cancelOrder, isPending: isCancelling, variables: cancellingId } = useCancelOrder()
+
+  const canCancel = (status: string) => status === "pending" || status === "confirmed"
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-IN", {
@@ -172,6 +175,27 @@ export function MyOrdersPage() {
                     Last updated: {formatDate(order.updated_at)} at {formatTime(order.updated_at)}
                   </div>
                 </div>
+
+                {/* Cancel button — only for pending/confirmed */}
+                {canCancel(order.status) && (
+                  <div className="pt-2 border-t border-border">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm("Are you sure you want to cancel this order? Stock will be restored.")) {
+                          cancelOrder(order.id)
+                        }
+                      }}
+                      disabled={isCancelling && cancellingId === order.id}
+                      className="px-4 py-2 text-sm font-medium text-destructive border border-destructive/40 rounded-lg hover:bg-destructive/10 disabled:opacity-50 transition-colors"
+                    >
+                      {isCancelling && cancellingId === order.id ? "Cancelling..." : "Cancel Order"}
+                    </button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Stock will be automatically restored upon cancellation.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

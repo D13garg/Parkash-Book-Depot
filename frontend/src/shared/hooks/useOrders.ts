@@ -102,3 +102,17 @@ export function useUpdateOrderStatus() {
     },
   })
 }
+export function useCancelOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await api.patch<Order>(`/orders/${orderId}/cancel`)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] })
+      queryClient.invalidateQueries({ queryKey: ["books"] })
+    },
+  })
+}

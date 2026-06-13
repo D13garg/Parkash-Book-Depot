@@ -23,6 +23,7 @@ pydantic-settings==2.5.2
 # Utilities
 python-multipart==0.0.12
 httpx==0.27.2
+google-auth>=2.29.0
 cloudinary==1.41.0
 
 # Testing

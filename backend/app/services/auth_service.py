@@ -1,8 +1,9 @@
 import time
 import logging
-import httpx
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import (
@@ -28,7 +29,7 @@ from app.services.email_service import send_otp_email
 
 logger = logging.getLogger(__name__)
 
-GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
+# Google auth uses official library — no manual HTTP calls
 
 
 def _to_user_response(user: UserModel) -> UserResponse:
@@ -216,30 +217,27 @@ class AuthService:
 
     async def google_auth(self, data: GoogleAuthRequest) -> TokenResponse:
         """
-        Verify Google ID token with Google's tokeninfo endpoint.
-        Creates account on first login, finds existing account on subsequent logins.
+        Verify Google ID token using the official google-auth library.
+        This validates signature, expiry, and audience — more secure than tokeninfo endpoint.
+        Creates account on first login, finds existing on subsequent logins.
         """
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(
-                GOOGLE_TOKENINFO_URL,
-                params={"id_token": data.id_token},
+        try:
+            # Verifies signature, expiry, and audience in one call
+            google_data = id_token.verify_oauth2_token(
+                data.id_token,
+                google_requests.Request(),
+                settings.GOOGLE_CLIENT_ID,
             )
-
-        if resp.status_code != 200:
+        except ValueError as e:
+            logger.warning(f"Google token verification failed: {type(e).__name__}")
             raise UnauthorizedException("Invalid Google token. Please try again.")
 
-        google_data = resp.json()
-
-        # Validate audience — must be our client ID
-        if google_data.get("aud") != settings.GOOGLE_CLIENT_ID:
-            raise UnauthorizedException("Google token audience mismatch.")
-
         # Validate email is verified by Google
-        if google_data.get("email_verified") != "true":
+        if not google_data.get("email_verified"):
             raise UnauthorizedException("Google account email is not verified.")
 
         email = google_data.get("email")
-        name = google_data.get("name") or email.split("@")[0]
+        name = google_data.get("name") or (email.split("@")[0] if email else None)
 
         if not email:
             raise UnauthorizedException("Could not retrieve email from Google account.")

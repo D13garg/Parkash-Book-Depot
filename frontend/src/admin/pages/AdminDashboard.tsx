@@ -7,6 +7,7 @@ import { BookManagementPage }      from "./BookManagementPage"
 import { AddBookPage }             from "./AddBookPage"
 import { EditBookPage }            from "./EditBookPage"
 import { AdminOrdersPage }         from "./AdminOrdersPage"
+import { AdminUsersPage }           from "@/admin/pages/AdminUsersPage"
 import { AdminReviewsPage }        from "./AdminReviewsPage"
 import { AdminGalleryPage }        from "./AdminGalleryPage"
 import { AdminAuditLogsPage }     from "./AdminAuditLogsPage"
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { label: "Error Logs",     path: "/admin/error-logs",  icon: "🔴" },
   { label: "Metrics",       path: "/admin/metrics",     icon: "📊" },
   { label: "Analytics",     path: "/admin/analytics",   icon: "🧠" },
+  { label: "Users",         path: "/admin/users",    icon: "👥" },
   { label: "Profile",       path: "/admin/profile",  icon: "👤" },
 ]
 
@@ -46,6 +48,7 @@ export function AdminDashboard() {
         <Route path="error-logs"          element={<AdminErrorLogsPage />} />
         <Route path="metrics"             element={<AdminMetricsDashboard />} />
         <Route path="analytics"           element={<AdminAnalyticsPage />} />
+        <Route path="users"              element={<AdminUsersPage />} />
       </Routes>
     </DashboardLayout>
   )
