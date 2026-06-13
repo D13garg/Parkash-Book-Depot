@@ -32,6 +32,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "camera=(), microphone=(), geolocation=()"
         )
 
+        # Content Security Policy — restricts what resources the browser can load
+        # API responses are JSON, not HTML, so a strict CSP is safe here
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; "
+            "frame-ancestors 'none';"   # belt-and-suspenders with X-Frame-Options
+        )
+
         # Remove server fingerprint
         if "server" in response.headers:
             del response.headers["server"]
