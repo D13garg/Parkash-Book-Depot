@@ -2,7 +2,6 @@ import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import api from "@/lib/axios"
 import type { User } from "@/shared/types"
-import { StatusBadge } from "@/shared/components/StatusBadge"
 import { LoadingSpinner } from "@/shared/components/LoadingSpinner"
 import { EmptyState } from "@/shared/components/EmptyState"
 
