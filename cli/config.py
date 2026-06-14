@@ -7,7 +7,7 @@ import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-DEFAULT_BASE_URL = "http://localhost:8000/api/v1"
+DEFAULT_BASE_URL = "https://railway.com/project/c17af014-81db-477e-bf90-88aac1e0a871/service/e687cac4-a5f6-4e7a-a193-703dc3568745?environmentId=381a3ead-be0d-41d3-9aa5-f3bfd4645fb6"
 
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "parkash-cli"
 CONFIG_FILE = CONFIG_DIR / "config.json"
