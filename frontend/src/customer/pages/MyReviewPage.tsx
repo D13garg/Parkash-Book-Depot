@@ -178,7 +178,7 @@ export function MyReviewsPage() {
           </p>
         </div>
         <button
-          onClick={() => navigate("/customer/reviews/submit")}
+          onClick={() => navigate("/customer/submit-review")}
           className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
         >
           + New Review
@@ -191,7 +191,7 @@ export function MyReviewsPage() {
           description="Share your experience with Parkash Book Depot."
           action={
             <button
-              onClick={() => navigate("/customer/reviews/submit")}
+              onClick={() => navigate("/customer/submit-review")}
               className="btn-primary mt-4"
             >
               Write a Review
