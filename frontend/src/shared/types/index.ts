@@ -166,6 +166,7 @@ export interface Review {
   category: string
   message: string
   created_at: string
+  updated_at: string | null
 }
 // ── Notifications ─────────────────────────────────────────────────────────────
 

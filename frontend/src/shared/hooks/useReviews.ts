@@ -40,3 +40,33 @@ export function useAllReviews() {
     },
   })
 }
+interface UpdateReviewData {
+  rating?: number
+  category?: string
+  message?: string
+}
+
+export function useUpdateReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ reviewId, data }: { reviewId: string; data: UpdateReviewData }) => {
+      const res = await api.patch<Review>(`/reviews/${reviewId}`, data)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews"] })
+    },
+  })
+}
+
+export function useDeleteReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (reviewId: string) => {
+      await api.delete(`/reviews/${reviewId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews"] })
+    },
+  })
+}

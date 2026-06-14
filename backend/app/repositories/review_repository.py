@@ -34,3 +34,13 @@ class ReviewRepository:
             return None
         doc = await self.collection.find_one({"_id": ObjectId(review_id)})
         return self._doc_to_model(doc) if doc else None
+
+    async def update(self, review_id: str, data: dict) -> Optional[ReviewModel]:
+        await self.collection.update_one(
+            {"_id": ObjectId(review_id)},
+            {"$set": data}
+        )
+        return await self.find_by_id(review_id)
+
+    async def delete(self, review_id: str) -> None:
+        await self.collection.delete_one({"_id": ObjectId(review_id)})

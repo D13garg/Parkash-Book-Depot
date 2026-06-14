@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.dependencies.database import get_db
 from app.dependencies.auth import get_current_user, get_current_admin
 from app.services.review_service import ReviewService
-from app.schemas.review import CreateReviewRequest, ReviewResponse
+from app.schemas.review import CreateReviewRequest, UpdateReviewRequest, ReviewResponse
 from app.models.user import UserModel
 
 router = APIRouter()
@@ -40,3 +40,26 @@ async def get_all_reviews(
     """Admin sees all reviews from all customers."""
     service = ReviewService(db)
     return await service.get_all_reviews(current_user)
+
+
+@router.patch("/{review_id}", response_model=ReviewResponse)
+async def update_review(
+    review_id: str,
+    data: UpdateReviewRequest,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """Customer edits their own review."""
+    service = ReviewService(db)
+    return await service.update_review(review_id, data, current_user)
+
+
+@router.delete("/{review_id}", status_code=204)
+async def delete_review(
+    review_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """Customer deletes their own review. Admin can delete any review."""
+    service = ReviewService(db)
+    await service.delete_review(review_id, current_user)
