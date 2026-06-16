@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Parkash Book Depot — Add Book",
+  "version": "1.0.0",
+  "description": "Scrape book details from Amazon, Flipkart, Google Books, or Snapdeal and auto-fill the Parkash Book Depot admin form.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": [
+    "https://www.amazon.in/*",
+    "https://www.flipkart.com/*",
+    "https://books.google.com/*",
+    "https://www.snapdeal.com/*",
+    "https://*.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.amazon.in/*"],
+      "js": ["content/amazon.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.flipkart.com/*"],
+      "js": ["content/flipkart.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://books.google.com/*"],
+      "js": ["content/google_books.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.snapdeal.com/*"],
+      "js": ["content/snapdeal.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.vercel.app/admin/books/add*"],
+      "js": ["inject/autofill.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

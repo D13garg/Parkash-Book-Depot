@@ -49,7 +49,9 @@ class BookService:
         return _to_book_response(book)
 
     async def create_book(self, data: CreateBookRequest, current_user: UserModel) -> BookResponse:
-        book = await self.book_repo.create(data.model_dump())
+        book_data = data.model_dump()
+        book_data["is_active"] = True
+        book = await self.book_repo.create(book_data)
         await audit(
             db=self.db, actor_id=current_user.id, actor_name=current_user.name,
             actor_role=current_user.role, action="book_created",
