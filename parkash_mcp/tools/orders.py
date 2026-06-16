@@ -1,54 +1,53 @@
-"""MCP tools for managing and viewing orders."""
-
+"""Orders tools — 3 tools."""
 from __future__ import annotations
+from typing import Optional
+from parkash_mcp.context import get_db, MCP_USER
+from parkash_mcp.adapter import run_tool, format_error
+from backend.app.services.order_service import OrderService
+from backend.app.schemas.order import UpdateOrderStatusRequest
 
-from typing import Any
-from parkash_mcp.adapter import check_auth, execute_get
 
+def register_order_tools(mcp) -> None:
 
-def register_order_tools(mcp: Any) -> None:
-    """Register order tools with the FastMCP instance."""
-    
     @mcp.tool()
-    async def list_orders(
+    async def list_all_orders(
+        status: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
-        all_orders: bool = False,
-        status: str | None = None,
-    ) -> dict[str, Any]:
-        """List orders. Requires the client to be logged in.
-        
-        Args:
-            page: Page number for pagination (default: 1).
-            page_size: Number of items per page (default: 20, max: 100).
-            all_orders: Set to true to list all orders (requires Admin role). 
-                         Defaults to false, which lists only your orders.
-            status: Filter orders by status (Admin only: pending, confirmed, processing, shipped, delivered, cancelled).
-            
-        Returns:
-            A dict containing a list of orders and pagination metadata.
+    ) -> str:
         """
-        check_auth()
-        
-        path = "orders" if all_orders else "orders/mine"
-        params: dict[str, Any] = {
-            "page": page,
-            "page_size": page_size,
-        }
-        if all_orders and status:
-            params["status"] = status
-            
-        return await execute_get(path, params=params)
+        List all customer orders (admin view).
+        Args:
+            status: Filter by status: pending, confirmed, processing, shipped, delivered, cancelled.
+            page: Page number (default 1).
+            page_size: Results per page (default 20).
+        """
+        return await run_tool(
+            OrderService(get_db()).get_all_orders,
+            status, page, page_size,
+        )
 
     @mcp.tool()
-    async def get_order(order_id: str) -> dict[str, Any]:
-        """Retrieve details of a single order by its ID. Requires client to be logged in.
-        
-        Args:
-            order_id: The unique ID of the order.
-            
-        Returns:
-            A dict containing order details (customer, items, status, address, phone).
+    async def get_order(order_id: str) -> str:
         """
-        check_auth()
-        return await execute_get(f"orders/{order_id}")
+        Get full details of a single order including line items.
+        Args:
+            order_id: MongoDB ObjectId string of the order.
+        """
+        return await run_tool(OrderService(get_db()).get_order, order_id, MCP_USER)
+
+    @mcp.tool()
+    async def update_order_status(order_id: str, status: str) -> str:
+        """
+        Update the status of an order. State machine enforced server-side.
+        Valid transitions: pending→confirmed, confirmed→processing,
+        processing→shipped, shipped→delivered. pending/confirmed→cancelled.
+        Args:
+            order_id: MongoDB ObjectId string of the order.
+            status: New status value.
+        """
+        try:
+            data = UpdateOrderStatusRequest(status=status)
+        except Exception as e:
+            return f"ERROR [VALIDATION]: {e}"
+        return await run_tool(OrderService(get_db()).update_status, order_id, data, MCP_USER)

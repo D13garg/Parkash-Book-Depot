@@ -1,32 +1,47 @@
-"""Context management for the MCP server, wrapping the CLI ApiClient."""
+"""
+MCP Context — database lifecycle and synthetic MCP identity.
+
+The MCP server connects directly to MongoDB using the same Motor client
+as the FastAPI app. No HTTP round-trips. No JWT tokens needed.
+
+All write actions are attributed to MCP_USER in the audit log so every
+AI-initiated action is distinguishable from human admin actions.
+"""
 
 from __future__ import annotations
 
-from cli.config import load_config
-from cli.http import ApiClient
+from datetime import datetime, timezone
+
+from backend.app.core.database import connect_to_mongo, close_mongo_connection, get_database
+from backend.app.core.enums import UserRole
+from backend.app.models.user import UserModel
 
 
-class MCPContext:
-    """Manages the lifecycle and state of the CLI ApiClient for the MCP server."""
-
-    def __init__(self) -> None:
-        # Load the configuration from the CLI storage or environment variables.
-        self.config = load_config()
-        
-        # Instantiate the ApiClient with require_auth=False to prevent SystemExit(1)
-        # when an access token is missing. Instead, we'll perform validation
-        # in the adapter/tools layer and raise clean exceptions.
-        self._client = ApiClient(require_auth=False, config=self.config)
-
-    @property
-    def client(self) -> ApiClient:
-        """Get the shared ApiClient instance."""
-        return self._client
-
-    def get_token(self) -> str | None:
-        """Get the current access token."""
-        return self.config.access_token
+# ── Synthetic MCP actor — used as current_user in all service calls ───────────
+MCP_USER = UserModel(
+    **{
+        "_id": "mcp-server",
+        "name": "MCP Server",
+        "email": "mcp@internal.parkashbookdepot.com",
+        "hashed_password": None,
+        "role": UserRole.ADMIN.value,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    }
+)
 
 
-# Global singleton context
-context = MCPContext()
+async def startup() -> None:
+    """Establish MongoDB connection on MCP server startup."""
+    await connect_to_mongo()
+
+
+async def shutdown() -> None:
+    """Close MongoDB connection on MCP server shutdown."""
+    await close_mongo_connection()
+
+
+def get_db():
+    """Return active MongoDB database instance (same singleton as FastAPI)."""
+    return get_database()

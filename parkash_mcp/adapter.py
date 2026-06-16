@@ -1,109 +1,86 @@
-"""Adapter layer to call the CLI ApiClient in worker threads and translate errors."""
+"""
+MCP Exception Adapter
+
+Translates AppException subclasses into clean MCP error strings.
+AppException.detail is a plain string — readable without any FastAPI involvement.
+
+All MCP tools call run_tool() which centralises the try/except so tool
+functions stay clean and focused on business logic only.
+"""
 
 from __future__ import annotations
 
-import asyncio
-from typing import Any
+import json
+import logging
+from typing import Any, Callable, Coroutine
 
-from cli.http import ApiError
-from .context import context
+from backend.app.core.exceptions import (
+    AppException,
+    NotFoundException,
+    ForbiddenException,
+    UnauthorizedException,
+    BadRequestException,
+    ConflictException,
+    TooManyRequestsException,
+    InvalidStateTransitionException,
+)
 
-
-class MCPError(Exception):
-    """Base exception for MCP adapter errors."""
-    pass
-
-
-class AuthenticationError(MCPError):
-    """Raised when authentication is required or fails."""
-    pass
-
-
-class NotFoundError(MCPError):
-    """Raised when a resource is not found."""
-    pass
+logger = logging.getLogger(__name__)
 
 
-class ConnectionError(MCPError):
-    """Raised when the backend API is unreachable."""
-    pass
+def _serialize(data: Any) -> str:
+    """Serialize result to formatted JSON string."""
+    if hasattr(data, "model_dump"):
+        return json.dumps(data.model_dump(), indent=2, default=str)
+    if isinstance(data, list):
+        return json.dumps(
+            [r.model_dump() if hasattr(r, "model_dump") else r for r in data],
+            indent=2, default=str,
+        )
+    if isinstance(data, dict):
+        return json.dumps(data, indent=2, default=str)
+    return str(data)
 
 
-def check_auth() -> None:
-    """Verify that an access token exists in the current context.
-    
-    Raises:
-        AuthenticationError: If the token is missing.
+def format_error(exc: Exception) -> str:
+    """Translate any exception into a clean MCP error string."""
+    if isinstance(exc, InvalidStateTransitionException):
+        return f"ERROR [STATE_TRANSITION]: {exc.detail}"
+    if isinstance(exc, NotFoundException):
+        return f"ERROR [NOT_FOUND]: {exc.detail}"
+    if isinstance(exc, ForbiddenException):
+        return f"ERROR [FORBIDDEN]: {exc.detail}"
+    if isinstance(exc, UnauthorizedException):
+        return f"ERROR [UNAUTHORIZED]: {exc.detail}"
+    if isinstance(exc, BadRequestException):
+        return f"ERROR [BAD_REQUEST]: {exc.detail}"
+    if isinstance(exc, ConflictException):
+        return f"ERROR [CONFLICT]: {exc.detail}"
+    if isinstance(exc, TooManyRequestsException):
+        return f"ERROR [RATE_LIMITED]: {exc.detail}"
+    if isinstance(exc, AppException):
+        return f"ERROR [{exc.status_code}]: {exc.detail}"
+    if isinstance(exc, RuntimeError):
+        # email_service raises RuntimeError — catch separately
+        logger.error(f"RuntimeError in MCP tool: {exc}")
+        return f"ERROR [RUNTIME]: {exc}"
+    logger.exception(f"Unexpected error in MCP tool: {exc}")
+    return f"ERROR [INTERNAL]: {type(exc).__name__}: {exc}"
+
+
+async def run_tool(coro_fn: Callable[..., Coroutine], *args: Any, **kwargs: Any) -> str:
     """
-    if not context.get_token():
-        raise AuthenticationError(
-            "Authentication required. Please run 'parkash auth login' in the CLI "
-            "or set the 'PARKASH_ACCESS_TOKEN' environment variable to authenticate."
-        )
+    Execute a service coroutine and return a formatted result string.
 
-
-def translate_error(exc: ApiError) -> MCPError:
-    """Map cli.http.ApiError to a semantic MCP-friendly error."""
-    if exc.status_code == 0:
-        return ConnectionError(
-            f"Could not reach the backend API at {context.client.config.base_url}. "
-            f"Please verify the backend server is running and reachable. Detail: {exc.detail}"
-        )
-    elif exc.status_code == 401:
-        return AuthenticationError(
-            f"Authentication failed (401 Unauthorized). Please log in again using the CLI "
-            f"or verify your access token. Detail: {exc.detail}"
-        )
-    elif exc.status_code == 403:
-        return AuthenticationError(
-            f"Permission denied (403 Forbidden). You are not authorized to perform "
-            f"this action. Detail: {exc.detail}"
-        )
-    elif exc.status_code == 404:
-        return NotFoundError(f"Resource not found (404). Detail: {exc.detail}")
-    else:
-        return MCPError(f"Backend API returned error {exc.status_code}: {exc.detail}")
-
-
-async def execute_get(path: str, params: dict[str, Any] | None = None) -> Any:
-    """Execute a GET request using the ApiClient in a separate thread.
-    
-    Args:
-        path: API path relative to the base URL.
-        params: Optional query parameters.
-        
-    Returns:
-        The JSON response from the API.
-        
-    Raises:
-        MCPError: If the request fails.
+    Usage:
+        return await run_tool(BookService(db).get_books)
+        return await run_tool(BookService(db).get_book, book_id)
+        return await run_tool(BookService(db).create_book, data, MCP_USER)
     """
     try:
-        # Offload synchronous HTTP request to a worker thread to keep the event loop responsive
-        return await asyncio.to_thread(context.client.get, path, params=params)
-    except ApiError as exc:
-        raise translate_error(exc) from exc
-    except Exception as exc:
-        raise MCPError(f"An unexpected error occurred: {exc}") from exc
-
-
-async def execute_post(path: str, json_data: dict[str, Any]) -> Any:
-    """Execute a POST request using the ApiClient in a separate thread.
-    
-    Args:
-        path: API path relative to the base URL.
-        json_data: JSON payload dictionary.
-        
-    Returns:
-        The JSON response from the API.
-        
-    Raises:
-        MCPError: If the request fails.
-    """
-    try:
-        # Offload synchronous HTTP request to a worker thread to keep the event loop responsive
-        return await asyncio.to_thread(context.client.post, path, json=json_data)
-    except ApiError as exc:
-        raise translate_error(exc) from exc
-    except Exception as exc:
-        raise MCPError(f"An unexpected error occurred: {exc}") from exc
+        result = await coro_fn(*args, **kwargs)
+        return _serialize(result)
+    except (AppException, RuntimeError) as e:
+        return format_error(e)
+    except Exception as e:
+        return format_error(e)

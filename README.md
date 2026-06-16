@@ -2,7 +2,7 @@
 
 A production-grade bookstore management system combining inventory management, customer project requests, internal operations, observability, and AI tooling via MCP.
 
-**Frontend:** Vercel
+**Live:** https://parkash-book-depot.vercel.app  
 **Backend:** Railway (FastAPI + MongoDB)
 
 ---
@@ -21,7 +21,7 @@ A production-grade bookstore management system combining inventory management, c
 | Storage | Cloudinary (gallery images) |
 | Deploy | Vercel (frontend), Railway (backend) |
 | CI/CD | GitHub Actions (backend tests + frontend build on every push) |
-| Developer Tools | CLI (Typer + Rich + httpx), MCP Server (FastMCP) |
+| Developer Tools | CLI (Typer + Rich + httpx), MCP Server (FastMCP), Chrome Extension |
 
 ---
 
@@ -30,20 +30,15 @@ A production-grade bookstore management system combining inventory management, c
 ```
 Parkash-Book-Depot/
 ├── backend/
-│   ├── main.py                          # uvicorn entry point
+│   ├── main.py
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   ├── pytest.ini
 │   ├── scripts/
-│   │   ├── seed_admin.py               # create first admin account
-│   │   └── create_associate.py         # create associate accounts
+│   │   ├── seed_admin.py
+│   │   └── create_associate.py
 │   ├── tests/
-│   │   └── unit/
-│   │       ├── test_security.py
-│   │       ├── test_state_machines.py
-│   │       └── test_permissions.py
 │   └── app/
-│       ├── main.py                      # FastAPI app factory + lifespan
 │       ├── core/
 │       │   ├── config.py               # pydantic-settings, all env vars
 │       │   ├── database.py             # Motor singleton + lifecycle
@@ -52,21 +47,21 @@ Parkash-Book-Depot/
 │       │   ├── exceptions.py           # AppException hierarchy + TooManyRequestsException
 │       │   ├── email_validation.py     # disposable email blocking
 │       │   └── create_indexes.py       # MongoDB indexes + TTL (otps, error_logs)
-│       ├── models/                      # MongoDB document shapes
+│       ├── models/
 │       │   ├── user.py                 # hashed_password Optional (Google OAuth)
 │       │   ├── book.py
 │       │   ├── order.py
-│       │   ├── otp.py                  # OTP document (hashed code, expiry, attempts)
+│       │   ├── otp.py                  # bcrypt-hashed code, expiry, attempts counter
 │       │   ├── project_request.py
 │       │   ├── project.py
 │       │   ├── project_update.py
-│       │   ├── review.py               # includes updated_at
+│       │   ├── review.py               # created_at + updated_at
 │       │   ├── gallery.py
 │       │   ├── notification.py
 │       │   ├── audit_log.py
 │       │   ├── error_log.py
 │       │   └── metrics.py
-│       ├── schemas/                     # API request/response shapes
+│       ├── schemas/
 │       │   ├── user.py                 # RegisterInitiateRequest, OTPVerifyRequest,
 │       │   │                           # ForgotPasswordVerifyRequest, GoogleAuthRequest
 │       │   ├── book.py
@@ -80,167 +75,119 @@ Parkash-Book-Depot/
 │       │   ├── error_log.py
 │       │   ├── metrics.py
 │       │   └── analytics.py
-│       ├── repositories/                # MongoDB queries only, no business logic
-│       │   ├── user_repository.py
+│       ├── repositories/
 │       │   ├── book_repository.py      # decrement_stock_atomic, increment_stock_atomic
-│       │   ├── order_repository.py
-│       │   ├── project_request_repository.py
-│       │   ├── project_repository.py
-│       │   ├── project_update_repository.py
-│       │   ├── review_repository.py    # update, delete methods added
-│       │   ├── gallery_repository.py
-│       │   ├── notification_repository.py
-│       │   ├── audit_log_repository.py
-│       │   ├── error_log_repository.py
-│       │   └── metrics_repository.py
-│       ├── services/                    # all business logic lives here
+│       │   ├── review_repository.py    # update, delete methods
+│       │   └── ...all other repos
+│       ├── services/
 │       │   ├── auth_service.py         # register (2-step OTP), login, Google OAuth,
 │       │   │                           # forgot password (OTP), refresh token
 │       │   ├── book_service.py
 │       │   ├── order_service.py        # cancel_order with stock restore,
 │       │   │                           # atomic stock on place + cancel
-│       │   ├── otp_service.py          # generate, hash, verify OTPs; rate limiting;
-│       │   │                           # brute force protection (5 attempts)
-│       │   ├── email_service.py        # Resend API, styled HTML templates
+│       │   ├── otp_service.py          # generate, hash, verify; rate limiting;
+│       │   │                           # brute force protection (5 attempts max)
+│       │   ├── email_service.py        # Resend API, styled HTML email templates
 │       │   ├── project_request_service.py
 │       │   ├── project_service.py
-│       │   ├── review_service.py       # edit + delete reviews, timestamp fix
+│       │   ├── review_service.py       # edit + delete, timestamp fix
 │       │   ├── gallery_service.py
 │       │   ├── notification_service.py
-│       │   ├── audit_log_service.py    # audit() helper — silent, all services call it
-│       │   ├── error_log_service.py    # log_error() helper — 7-day TTL
-│       │   ├── metrics_service.py      # increment() helper — hourly counters
-│       │   └── analytics_service.py   # pure aggregation, no storage
+│       │   ├── audit_log_service.py
+│       │   ├── error_log_service.py
+│       │   ├── metrics_service.py
+│       │   └── analytics_service.py
 │       ├── permissions/
-│       │   ├── role_permissions.py
-│       │   ├── project_permissions.py
-│       │   └── project_request_permissions.py
 │       ├── dependencies/
-│       │   ├── database.py             # get_db()
-│       │   └── auth.py                 # get_current_user, get_current_admin
 │       ├── middleware/
-│       │   ├── logging.py
 │       │   ├── security_headers.py     # CSP, X-Frame-Options, HSTS, etc.
-│       │   ├── rate_limit.py           # slowapi
-│       │   └── error_handler.py
-│       └── api/v1/
-│           ├── router.py
-│           └── endpoints/
-│               ├── health.py
-│               ├── auth.py             # /register/initiate, /register/verify,
-│               │                       # /login, /forgot-password/initiate,
-│               │                       # /forgot-password/verify, /google, /refresh, /me
-│               ├── users.py            # GET /users, GET /users/associates,
-│               │                       # PATCH /users/{id}/deactivate,
-│               │                       # PATCH /users/{id}/reactivate
-│               ├── books.py
-│               ├── orders.py           # includes PATCH /{id}/cancel (customer)
-│               ├── project_requests.py
-│               ├── projects.py
-│               ├── reviews.py          # PATCH /{id}, DELETE /{id} added
-│               ├── gallery.py
-│               ├── notifications.py
-│               ├── audit_logs.py
-│               ├── error_logs.py
-│               ├── metrics.py
-│               └── analytics.py
+│       │   └── ...
+│       └── api/v1/endpoints/
+│           ├── auth.py                 # /register/initiate, /register/verify,
+│           │                           # /login, /forgot-password/initiate,
+│           │                           # /forgot-password/verify, /google, /refresh, /me
+│           ├── users.py                # GET /users, GET /users/associates,
+│           │                           # PATCH /{id}/deactivate, PATCH /{id}/reactivate
+│           ├── books.py
+│           ├── orders.py               # includes PATCH /{id}/cancel (customer)
+│           ├── reviews.py              # PATCH /{id}, DELETE /{id} added
+│           └── ...all other endpoints
 │
-├── parkash_mcp/                         # MCP server — AI client integration
-│   ├── server.py                        # FastMCP entry point
-│   ├── context.py                       # MCPContext wrapping CLI ApiClient
-│   ├── adapter.py                       # exception translation, async thread wrapper
+├── parkash_mcp/                        # MCP Server — AI client integration
+│   ├── server.py                       # FastMCP entry point, registers all tools
+│   ├── context.py                      # MongoDB lifecycle + MCP_USER synthetic identity
+│   ├── adapter.py                      # AppException → MCP error string translator
 │   └── tools/
-│       ├── health.py                    # health_check tool
-│       ├── books.py                     # list_books, get_book tools
-│       └── orders.py                    # list_orders, get_order tools
-│                                        # ⚠ remaining 27 tools pending (see MCP section)
+│       ├── books.py                    # list_books, get_book, get_low_stock_books,
+│       │                               # create_book, update_book, update_book_stock
+│       ├── orders.py                   # list_all_orders, get_order, update_order_status
+│       ├── users.py                    # list_users, list_associates,
+│       │                               # deactivate_user, reactivate_user
+│       ├── projects.py                 # list_project_requests, get_project_request,
+│       │                               # update_request_status, convert_request_to_project,
+│       │                               # list_projects, get_project, get_project_updates,
+│       │                               # assign_project_associate, update_project_status,
+│       │                               # add_project_update
+│       ├── reviews.py                  # list_reviews, delete_review (confirm=True required)
+│       └── observability.py            # ping, get_analytics, get_metrics_summary,
+│                                       # get_metrics_trend, get_audit_logs,
+│                                       # get_entity_audit_logs, get_error_logs
 │
-├── cli/                                 # Developer CLI
-│   ├── main.py                          # typer app: auth login/logout, config
-│   ├── http.py                          # sync httpx ApiClient, ApiError
-│   ├── config.py                        # ~/.config/parkash-cli/config.json (chmod 600)
+├── cli/                                # Developer CLI
+│   ├── main.py                         # typer app: auth login/logout, config
+│   ├── http.py                         # sync httpx ApiClient, ApiError
+│   ├── config.py                       # ~/.config/parkash-cli/config.json (chmod 600)
 │   └── commands/
-│       ├── books.py                     # parkash books list / get
-│       ├── orders.py                    # parkash orders list / get
-│       └── users.py                     # parkash users list
+│       ├── books.py
+│       ├── orders.py
+│       └── users.py
+│
+├── extension/                          # Chrome Extension — "Add to Parkash" button
+│   ├── manifest.json                   # Manifest V3
+│   ├── background.js                   # service worker, opens dashboard with URL params
+│   ├── content/
+│   │   ├── amazon.js                   # scraper for Amazon India
+│   │   ├── flipkart.js                 # scraper for Flipkart
+│   │   ├── google_books.js             # scraper for Google Books
+│   │   └── snapdeal.js                 # scraper for Snapdeal
+│   ├── inject/
+│   │   └── autofill.js                 # injected on /admin/books/add, fills form fields
+│   └── icons/
+│       ├── icon16.png
+│       ├── icon48.png
+│       └── icon128.png
 │
 └── frontend/
-    ├── vercel.json                      # security headers (CSP, X-Frame, HSTS, etc.)
+    ├── vercel.json                     # security headers (CSP, X-Frame, HSTS, etc.)
     └── src/
         ├── auth/pages/
-        │   ├── LoginPage.tsx            # email/password + Google Sign-In button
-        │   ├── RegisterPage.tsx         # step 1: fill form → sends OTP
-        │   ├── VerifyOTPPage.tsx        # step 2: 4-digit OTP entry (shared for
-        │   │                            # register + forgot password)
-        │   └── ForgotPasswordPage.tsx   # enter email → sends OTP
+        │   ├── LoginPage.tsx           # email/password + Google Sign-In button
+        │   ├── RegisterPage.tsx        # step 1: fill form → sends OTP
+        │   ├── VerifyOTPPage.tsx       # step 2: 4-digit OTP (register + forgot password)
+        │   └── ForgotPasswordPage.tsx
         ├── customer/pages/
-        │   ├── CustomerDashboard.tsx
-        │   ├── BooksPage.tsx            # browse, search, filter, book detail drawer
-        │   ├── CartPage.tsx             # cart items, qty controls, checkout
-        │   ├── MyOrdersPage.tsx         # order history + cancel button (pending/confirmed)
-        │   ├── MyRequestsPage.tsx
-        │   ├── SubmitRequestPage.tsx
-        │   ├── MyReviewPage.tsx         # view + inline edit + delete reviews
+        │   ├── BooksPage.tsx           # browse, search, filter, book detail drawer
+        │   ├── CartPage.tsx
+        │   ├── MyOrdersPage.tsx        # order history + cancel button (pending/confirmed)
+        │   ├── MyReviewPage.tsx        # view + inline edit + delete reviews
         │   ├── SubmitReviewPage.tsx
-        │   ├── GalleryPage.tsx
-        │   ├── ContactUsPage.tsx
-        │   └── ProfilePage.tsx
+        │   └── ...all other pages
         ├── associate/pages/
-        │   ├── AssociateDashboard.tsx
-        │   ├── AssignedProjectsPage.tsx
-        │   ├── ProjectDetailPage.tsx
-        │   └── AddUpdatePage.tsx
         ├── admin/pages/
-        │   ├── AdminDashboard.tsx
-        │   ├── RequestQueuePage.tsx
-        │   ├── AllProjectsPage.tsx
         │   ├── AdminProjectDetailPage.tsx  # assign by name dropdown (useAssociates)
-        │   ├── AdminOrdersPage.tsx
-        │   ├── BookManagementPage.tsx
-        │   ├── AddBookPage.tsx
-        │   ├── EditBookPage.tsx
-        │   ├── AdminReviewsPage.tsx
-        │   ├── AdminGalleryPage.tsx
-        │   ├── AdminAuditLogsPage.tsx
-        │   ├── AdminErrorLogsPage.tsx
-        │   ├── AdminMetricsDashboard.tsx
-        │   ├── AdminAnalyticsPage.tsx
-        │   ├── AdminOrdersPage.tsx
-        │   └── AdminUsersPage.tsx          # deactivate/reactivate users, stat cards
+        │   ├── AdminUsersPage.tsx          # deactivate/reactivate, stat cards
+        │   └── ...all other pages
         └── shared/
-            ├── components/
-            │   ├── DashboardLayout.tsx
-            │   ├── CartIcon.tsx
-            │   ├── NotificationBell.tsx
-            │   ├── StatusBadge.tsx
-            │   ├── Pagination.tsx
-            │   ├── LoadingSpinner.tsx
-            │   ├── EmptyState.tsx
-            │   ├── Skeletons.tsx
-            │   └── Toast.tsx
             ├── hooks/
-            │   ├── useAuth.ts           # login, registerInitiate/Verify,
-            │   │                        # forgotPassword, googleAuth, logout
-            │   ├── useBooks.ts
-            │   ├── useOrders.ts         # useCancelOrder added
-            │   ├── useAssociates.ts     # GET /users/associates for admin dropdown
-            │   ├── useProjectRequests.ts
-            │   ├── useProjects.ts
-            │   ├── useReviews.ts        # useUpdateReview, useDeleteReview added
-            │   ├── useGallery.ts
-            │   ├── useNotifications.ts
-            │   ├── useAdminRequests.ts
-            │   ├── useAdminProjects.ts
-            │   ├── useAdminBooks.ts
-            │   ├── useAuditLogs.ts
-            │   ├── useErrorLogs.ts
-            │   ├── useMetrics.ts
-            │   └── useAnalytics.ts
-            ├── stores/
-            │   ├── authStore.ts         # Zustand, persisted to localStorage
-            │   └── cartStore.ts         # Zustand, persisted, qty capped to stock
-            └── types/
-                └── index.ts
+            │   ├── useAuth.ts          # login, registerInitiate/Verify,
+            │   │                       # forgotPassword, googleAuth, logout
+            │   ├── useAssociates.ts    # GET /users/associates for admin dropdown
+            │   ├── useOrders.ts        # includes useCancelOrder
+            │   ├── useReviews.ts       # includes useUpdateReview, useDeleteReview
+            │   └── ...all other hooks
+            └── stores/
+                ├── authStore.ts        # Zustand, persisted to localStorage
+                └── cartStore.ts        # Zustand, persisted, qty capped to stock
 ```
 
 ---
@@ -249,7 +196,7 @@ Parkash-Book-Depot/
 
 | Role | Access |
 |------|--------|
-| **Customer** | Browse books, cart + orders, cancel orders, submit requests, write/edit/delete reviews, view gallery |
+| **Customer** | Browse books, cart + orders, cancel orders (pending/confirmed), submit requests, write/edit/delete reviews, view gallery |
 | **Associate** | Assigned projects only, add progress updates, change project status |
 | **Admin** | Full access — books, orders, projects, users, reviews, gallery, analytics, observability |
 
@@ -259,51 +206,50 @@ Parkash-Book-Depot/
 
 ### Email Registration (2-step OTP)
 ```
-1. POST /auth/register/initiate  — validate data, hash password, send 4-digit OTP via Resend
+1. POST /auth/register/initiate  — validate, hash password, send 4-digit OTP via Resend
 2. POST /auth/register/verify    — verify OTP → create account → return JWT tokens
 ```
 
-### Forgot Password (OTP)
+### Forgot Password
 ```
-1. POST /auth/forgot-password/initiate  — send OTP (silent if email not found, prevents enumeration)
+1. POST /auth/forgot-password/initiate  — send OTP (silent if email not found)
 2. POST /auth/forgot-password/verify    — verify OTP + new password → update hash
 ```
 
 ### Google OAuth
 ```
-Frontend loads Google Identity Services script → user clicks button → Google returns id_token
-→ POST /auth/google  — verified with google-auth library (not tokeninfo endpoint)
-→ creates account on first login, finds existing on subsequent logins
+Frontend loads Google Identity Services → user clicks button → Google returns id_token
+→ POST /auth/google — verified with google-auth library → create/find account → return tokens
 ```
 
 ### OTP Security Model
-- Codes are 4 digits, generated with `secrets.randbelow` (cryptographically secure)
-- Stored as **bcrypt hash** — never plain text
-- **Single-use** — burned immediately on verification
-- **3-minute expiry** — MongoDB TTL index auto-deletes expired documents
-- **Max 5 wrong attempts** before OTP is invalidated (brute force protection)
-- **Max 3 sends per email per hour** (flood protection)
-- Constant-time bcrypt comparison (no timing attacks)
+- Cryptographically secure 4-digit codes (`secrets.randbelow`)
+- Stored as **bcrypt hash** — never plain text in DB
+- **Single-use** — burned immediately on first successful verify
+- **3-minute expiry** — MongoDB TTL index auto-deletes
+- **Max 5 wrong attempts** — OTP invalidated after lockout
+- **Max 3 sends per email per hour** — flood protection
+- Constant-time bcrypt comparison — no timing attacks
 
 ---
 
 ## API Endpoints
 
-| Module | Prefix | Key Endpoints |
-|--------|--------|---------------|
-| Auth | `/api/v1/auth` | register/initiate, register/verify, login, forgot-password/initiate, forgot-password/verify, google, refresh, me |
-| Users | `/api/v1/users` | list all, associates, deactivate, reactivate |
-| Books | `/api/v1/books` | CRUD, stock management, low-stock alert |
-| Orders | `/api/v1/orders` | place, my orders, all orders (admin), update status, cancel (customer) |
-| Project Requests | `/api/v1/project-requests` | submit, list, status update |
-| Projects | `/api/v1/projects` | create, assign associate, status, updates timeline |
-| Reviews | `/api/v1/reviews` | submit, edit, delete, my reviews, all reviews (admin) |
-| Gallery | `/api/v1/gallery` | upload (Cloudinary), caption, delete |
-| Notifications | `/api/v1/notifications` | list, mark read, unread count |
-| Audit Logs | `/api/v1/audit-logs` | list with filters, by entity |
-| Error Logs | `/api/v1/error-logs` | list with filters (7-day TTL) |
-| Metrics | `/api/v1/metrics` | summary, 30-day trend |
-| Analytics | `/api/v1/analytics` | full operational intelligence dashboard |
+| Module | Prefix |
+|--------|--------|
+| Auth | `/api/v1/auth` |
+| Users | `/api/v1/users` |
+| Books | `/api/v1/books` |
+| Orders | `/api/v1/orders` |
+| Project Requests | `/api/v1/project-requests` |
+| Projects | `/api/v1/projects` |
+| Reviews | `/api/v1/reviews` |
+| Gallery | `/api/v1/gallery` |
+| Notifications | `/api/v1/notifications` |
+| Audit Logs | `/api/v1/audit-logs` |
+| Error Logs | `/api/v1/error-logs` |
+| Metrics | `/api/v1/metrics` |
+| Analytics | `/api/v1/analytics` |
 
 ---
 
@@ -312,114 +258,59 @@ Frontend loads Google Identity Services script → user clicks button → Google
 | Feature | Detail |
 |---------|--------|
 | JWT | Access token (30 min) + refresh token (3 days) |
-| Passwords | bcrypt + pepper, strength enforced (upper, lower, digit, special) |
+| Passwords | bcrypt + pepper, strength enforced |
 | OTP | bcrypt-hashed, single-use, 3-min TTL, 5-attempt lockout |
 | Google OAuth | Verified via `google-auth` library (signature + expiry + audience) |
-| Rate limiting | slowapi — 5/min register, 10/min login, 5/min OTP initiate |
-| Security headers | CSP, X-Frame-Options (DENY), HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy — set on both Railway (API) and Vercel (frontend CDN) |
+| Rate limiting | slowapi — 5/min register initiate, 10/min login, 5/min OTP |
+| Security headers | CSP, X-Frame-Options (DENY), HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy — set on both Railway and Vercel |
 | RBAC | Role + ownership checks on every sensitive endpoint |
-| Email validation | Blocks disposable/fake domains |
 | Stock race condition | Atomic `findOneAndUpdate` with `$inc` and floor check — prevents overselling |
-| Docs | Swagger UI and OpenAPI disabled in production |
-| Request size | 5MB max |
+| Docs | Swagger UI + OpenAPI disabled in production |
 
 ---
 
 ## Observability
 
-| Layer | Collection | Retention | Notes |
-|-------|-----------|-----------|-------|
-| Audit Logs | `audit_logs` | Permanent | Every important action, all services |
-| Error Logs | `error_logs` | 7 days | MongoDB TTL index auto-deletes |
-| Metrics | `metrics_hourly` | Permanent | Hourly counters, 30-day trend chart |
-| Analytics | Aggregated on-demand | No storage | Revenue, top books, request funnel |
+| Layer | Retention | Notes |
+|-------|-----------|-------|
+| Audit Logs | Permanent | Every important action, all services, includes MCP Server actor |
+| Error Logs | 7 days | MongoDB TTL auto-deletes |
+| Metrics | Permanent | Hourly counters, 30-day trend |
+| Analytics | On-demand | Revenue, top books, request funnel — no storage |
 
 ---
 
 ## MongoDB Collections
 
 ```
-users           books           orders
-otps            project_requests  projects
-project_updates reviews         gallery
-notifications   audit_logs      error_logs
-metrics_hourly
+users  books  orders  otps  project_requests  projects
+project_updates  reviews  gallery  notifications
+audit_logs  error_logs  metrics_hourly
 ```
 
 ---
 
 ## State Machines
 
-**Project Request:**
-```
-submitted → under_review → accepted → converted_to_project
-                        → rejected
-```
+**Order:** `pending → confirmed → processing → shipped → delivered`  
+Customer or admin can cancel from `pending` or `confirmed`. Stock atomically restored on any cancellation.
 
-**Project:**
-```
-pending → assigned → in_progress → waiting_supplier → completed
-                                                    → cancelled
-```
+**Project Request:** `submitted → under_review → accepted/rejected → converted_to_project`
 
-**Order:**
-```
-pending → confirmed → processing → shipped → delivered
-       ↘ cancelled   ↘ cancelled
-       (customer or admin)
-```
-Stock is atomically restored on any cancellation path.
+**Project:** `pending → assigned → in_progress → waiting_supplier → completed/cancelled`
 
 ---
 
-## Developer CLI
+## MCP Server (32 tools)
+
+**Architecture:** `MCP tools → internal services → repositories → MongoDB` (no HTTP, no JWT)
+
+All write actions attributed to `MCP Server` identity in audit log.
 
 ```bash
-cd cli
-pip install typer rich httpx
-
-# Authenticate
-python -m cli.main auth login --email admin@example.com
-
-# Books
-python -m cli.main books list --search "NCERT" --in-stock-only
-python -m cli.main books get <book_id>
-
-# Orders
-python -m cli.main orders list --all --status pending
-python -m cli.main orders get <order_id>
-
-# Users (admin)
-python -m cli.main users list
-
-# Config
-python -m cli.main config
+cd Parkash-Book-Depot
+python -m parkash_mcp.server
 ```
-
-Tokens stored at `~/.config/parkash-cli/config.json` (chmod 600).  
-Override API URL: `--api-url` flag or `PARKASH_API_URL` env var.
-
----
-
-## MCP Server (AI Client Integration)
-
-Exposes the bookstore to AI clients (Claude Desktop, Cursor, Windsurf, ChatGPT) via the Model Context Protocol.
-
-**Architecture:** MCP tools → internal services → repositories → MongoDB (no HTTP round-trip)
-
-**Current status:** Foundation complete. 5 tools live (health, list_books, get_book, list_orders, get_order). 27 tools pending.
-
-**Planned tool inventory (32 total):**
-
-| Domain | Tools |
-|--------|-------|
-| Health | `ping` |
-| Books | `list_books`, `get_book`, `get_low_stock_books`, `create_book`, `update_book`, `update_book_stock` |
-| Orders | `list_all_orders`, `get_order`, `update_order_status` |
-| Users | `list_users`, `list_associates`, `deactivate_user`, `reactivate_user` |
-| Projects | `list_project_requests`, `get_project_request`, `update_request_status`, `convert_request_to_project`, `list_projects`, `get_project`, `get_project_updates`, `assign_project_associate`, `update_project_status`, `add_project_update` |
-| Reviews | `list_reviews`, `delete_review` |
-| Observability | `get_analytics`, `get_metrics_summary`, `get_metrics_trend`, `get_audit_logs`, `get_entity_audit_logs`, `get_error_logs` |
 
 Claude Desktop config (`~/.claude/claude_desktop_config.json`):
 ```json
@@ -447,24 +338,62 @@ Claude Desktop config (`~/.claude/claude_desktop_config.json`):
 }
 ```
 
+| Domain | Tools |
+|--------|-------|
+| Books | `list_books`, `get_book`, `get_low_stock_books`, `create_book`, `update_book`, `update_book_stock` |
+| Orders | `list_all_orders`, `get_order`, `update_order_status` |
+| Users | `list_users`, `list_associates`, `deactivate_user`, `reactivate_user` |
+| Projects | `list_project_requests`, `get_project_request`, `update_request_status`, `convert_request_to_project`, `list_projects`, `get_project`, `get_project_updates`, `assign_project_associate`, `update_project_status`, `add_project_update` |
+| Reviews | `list_reviews`, `delete_review` (requires `confirm=True`) |
+| Observability | `ping`, `get_analytics`, `get_metrics_summary`, `get_metrics_trend`, `get_audit_logs`, `get_entity_audit_logs`, `get_error_logs` |
+
+---
+
+## Developer CLI
+
+```bash
+cd cli && pip install typer rich httpx
+
+python -m cli.main auth login --email admin@example.com
+python -m cli.main books list --search "NCERT"
+python -m cli.main orders list --status pending
+python -m cli.main users list
+```
+
+Tokens stored at `~/.config/parkash-cli/config.json` (chmod 600).
+
+---
+
+## Chrome Extension — "Add to Parkash"
+
+Scrapes book details from Amazon India, Flipkart, Google Books, Snapdeal and auto-fills the admin Add Book form.
+
+**Install:**
+1. `chrome://extensions/` → Enable Developer mode
+2. Load unpacked → select `extension/` folder
+
+**Usage:** Open any book page on a supported site → click amber **"📚 Add to Parkash Book Depot"** button → dashboard opens with all fields pre-filled.
+
+**Scraped fields:** title, authors, publisher, ISBN, description, language, price, categories, edition
+
 ---
 
 ## Local Setup
 
 ```bash
-# 1. Backend
+# Backend
 cd backend
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # fill in values
-python scripts/seed_admin.py  # create first admin account
+cp .env.example .env
+python scripts/seed_admin.py
 uvicorn app.main:app --reload --port 8000
 
-# 2. Frontend
+# Frontend
 cd frontend
 npm install
-cp .env.example .env.local    # set VITE_API_URL and VITE_GOOGLE_CLIENT_ID
-npm run dev                   # http://localhost:5173
+cp .env.example .env.local
+npm run dev
 ```
 
 ---
@@ -473,20 +402,20 @@ npm run dev                   # http://localhost:5173
 
 ### Railway (Backend)
 ```
-SECRET_KEY=<min 32 chars: python -c "import secrets; print(secrets.token_hex(32))">
-PEPPER=<min 32 chars: same as above>
+SECRET_KEY=<min 32 chars>
+PEPPER=<min 32 chars>
 MONGODB_URL=<Atlas connection string>
 MONGODB_DB_NAME=parkash_book_depot
 ENVIRONMENT=production
 DEBUG=false
 ALLOWED_ORIGINS=["https://your-vercel-url.vercel.app"]
-CLOUDINARY_CLOUD_NAME=<value>
-CLOUDINARY_API_KEY=<value>
-CLOUDINARY_API_SECRET=<value>
-RESEND_API_KEY=<value>
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+RESEND_API_KEY=
 EMAIL_FROM=noreply@yourdomain.com
-GOOGLE_CLIENT_ID=<value>
-GOOGLE_CLIENT_SECRET=<value>
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 ### Vercel (Frontend)
@@ -500,8 +429,7 @@ VITE_GOOGLE_CLIENT_ID=<same as Railway GOOGLE_CLIENT_ID>
 ## Tests
 
 ```bash
-cd backend
-pytest tests/ -v
+cd backend && pytest tests/ -v
 ```
 
 Covers: security utilities, state machine transitions, RBAC permissions.
