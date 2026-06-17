@@ -19,15 +19,15 @@ CSRF_EXEMPT_PATHS = {
 class CsrfMiddleware(BaseHTTPMiddleware):
     """
     Double-submit cookie CSRF protection for cookie-authenticated browser clients.
-    Skips validation for safe methods, Bearer-token clients (CLI/MCP), and
-    session-establishing auth endpoints.
+    Skips validation for safe methods, session-establishing auth endpoints, and
+    requests with no csrf_token cookie (CLI/MCP — they use Bearer tokens, not cookies).
+
+    Do NOT exempt based on Authorization: Bearer — attackers can send a garbage
+    Bearer prefix while the browser auto-attaches real auth cookies; get_current_user
+    would authenticate via cookie and ignore the fake header.
     """
     async def dispatch(self, request: Request, call_next):
         if request.method in ("GET", "HEAD", "OPTIONS"):
-            return await call_next(request)
-
-        auth_header = request.headers.get("authorization", "")
-        if auth_header.lower().startswith("bearer "):
             return await call_next(request)
 
         if request.url.path in CSRF_EXEMPT_PATHS:
