@@ -1,10 +1,8 @@
-"""Books tools — 6 tools."""
+"""Books tools — 6 tools. Calls the backend over HTTP instead of MongoDB."""
 from __future__ import annotations
 from typing import Optional
-from parkash_mcp.context import get_db, MCP_USER
-from parkash_mcp.adapter import run_tool, format_error
-from backend.app.services.book_service import BookService
-from backend.app.schemas.book import CreateBookRequest, UpdateBookRequest
+from parkash_mcp.context import get_client
+from parkash_mcp.adapter import run_tool
 
 
 def register_book_tools(mcp) -> None:
@@ -32,12 +30,13 @@ def register_book_tools(mcp) -> None:
             page: Page number (default 1).
             page_size: Results per page (default 20).
         """
-        return await run_tool(
-            BookService(get_db()).get_books,
-            page=page, page_size=page_size, category=category,
-            author=author, min_price=min_price, max_price=max_price,
-            in_stock_only=in_stock_only, search=search,
-        )
+        params = {
+            "page": page, "page_size": page_size, "category": category,
+            "author": author, "min_price": min_price, "max_price": max_price,
+            "in_stock_only": in_stock_only, "search": search,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        return await run_tool(get_client().get, "/books", params=params)
 
     @mcp.tool()
     async def get_book(book_id: str) -> str:
@@ -46,7 +45,7 @@ def register_book_tools(mcp) -> None:
         Args:
             book_id: MongoDB ObjectId string of the book.
         """
-        return await run_tool(BookService(get_db()).get_book, book_id)
+        return await run_tool(get_client().get, f"/books/{book_id}")
 
     @mcp.tool()
     async def get_low_stock_books() -> str:
@@ -54,7 +53,7 @@ def register_book_tools(mcp) -> None:
         Return all books at or below their low_stock_threshold.
         Use this to identify restocking needs.
         """
-        return await run_tool(BookService(get_db()).get_low_stock_books)
+        return await run_tool(get_client().get, "/books/admin/low-stock")
 
     @mcp.tool()
     async def create_book(
@@ -85,16 +84,14 @@ def register_book_tools(mcp) -> None:
             language: Language (default 'English').
             low_stock_threshold: Alert threshold (default 5).
         """
-        try:
-            data = CreateBookRequest(
-                title=title, authors=authors, price=price, stock=stock,
-                categories=categories, publisher=publisher, isbn=isbn,
-                description=description, edition=edition, language=language,
-                low_stock_threshold=low_stock_threshold,
-            )
-        except Exception as e:
-            return f"ERROR [VALIDATION]: {e}"
-        return await run_tool(BookService(get_db()).create_book, data, MCP_USER)
+        payload = {
+            "title": title, "authors": authors, "price": price, "stock": stock,
+            "categories": categories, "publisher": publisher, "isbn": isbn,
+            "description": description, "edition": edition, "language": language,
+            "low_stock_threshold": low_stock_threshold,
+        }
+        payload = {k: v for k, v in payload.items() if v is not None}
+        return await run_tool(get_client().post, "/books", json=payload)
 
     @mcp.tool()
     async def update_book(
@@ -121,16 +118,14 @@ def register_book_tools(mcp) -> None:
             isbn: ISBN number.
             low_stock_threshold: New low stock alert threshold.
         """
-        try:
-            data = UpdateBookRequest(
-                title=title, price=price, publisher=publisher,
-                description=description, edition=edition,
-                language=language, isbn=isbn,
-                low_stock_threshold=low_stock_threshold,
-            )
-        except Exception as e:
-            return f"ERROR [VALIDATION]: {e}"
-        return await run_tool(BookService(get_db()).update_book, book_id, data, MCP_USER)
+        payload = {
+            "title": title, "price": price, "publisher": publisher,
+            "description": description, "edition": edition,
+            "language": language, "isbn": isbn,
+            "low_stock_threshold": low_stock_threshold,
+        }
+        payload = {k: v for k, v in payload.items() if v is not None}
+        return await run_tool(get_client().put, f"/books/{book_id}", json=payload)
 
     @mcp.tool()
     async def update_book_stock(book_id: str, new_stock: int) -> str:
@@ -140,4 +135,6 @@ def register_book_tools(mcp) -> None:
             book_id: MongoDB ObjectId string of the book.
             new_stock: New stock quantity (must be >= 0).
         """
-        return await run_tool(BookService(get_db()).update_stock, book_id, new_stock, MCP_USER)
+        return await run_tool(
+            get_client().patch, f"/books/{book_id}/stock", json={"stock": new_stock}
+        )

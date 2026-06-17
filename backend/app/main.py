@@ -8,7 +8,11 @@ from app.core.database import connect_to_mongo, close_mongo_connection, get_data
 from app.core.create_indexes import create_indexes
 from app.api.v1.router import api_router
 from app.middleware.logging import LoggingMiddleware
-from app.middleware.security_headers import SecurityHeadersMiddleware, RequestSizeLimitMiddleware
+from app.middleware.security_headers import (
+    SecurityHeadersMiddleware,
+    RequestSizeLimitMiddleware,
+    CsrfMiddleware,
+)
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from slowapi import _rate_limit_exceeded_handler
@@ -49,12 +53,14 @@ def create_app() -> FastAPI:
     # ── Middleware (order matters — outermost runs first) ───────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS,   # localhost URLs
-        allow_origin_regex=r"https://.*\.vercel\.app.*",  # any Vercel preview or production
+        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_origin_regex=r"https://.*\.vercel\.app",
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "Accept"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "X-CSRF-Token"],
+        expose_headers=["X-CSRF-Token"],
     )
+    app.add_middleware(CsrfMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestSizeLimitMiddleware)
     app.add_middleware(ErrorHandlerMiddleware)

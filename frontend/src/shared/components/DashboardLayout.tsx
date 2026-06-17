@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { NavLink, useNavigate } from "react-router-dom"
-import { useAuthStore } from "@/stores/authStore"
+import { NavLink } from "react-router-dom"
+import { useAuth } from "@/shared/hooks/useAuth"
 import { NotificationBell } from "./NotificationBell"
 import { CartIcon } from "./CartIcon"
 import type { ReactNode } from "react"
@@ -19,13 +19,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, navItems, title }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, clearAuth } = useAuthStore()
-  const navigate = useNavigate()
-
-  const handleLogout = () => {
-    clearAuth()
-    navigate("/login")
-  }
+  const { user, logout } = useAuth()
 
   return (
     <div className="min-h-screen mesh-bg flex">
@@ -74,7 +68,7 @@ export function DashboardLayout({ children, navItems, title }: DashboardLayoutPr
             </div>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={() => logout()}
             className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
           >
             🚪 Logout

@@ -1,8 +1,7 @@
-"""Reviews tools — 2 tools."""
+"""Reviews tools — 2 tools. Calls the backend over HTTP instead of MongoDB."""
 from __future__ import annotations
-from parkash_mcp.context import get_db, MCP_USER
+from parkash_mcp.context import get_client
 from parkash_mcp.adapter import run_tool
-from backend.app.services.review_service import ReviewService
 
 
 def register_review_tools(mcp) -> None:
@@ -13,7 +12,7 @@ def register_review_tools(mcp) -> None:
         List all customer reviews across the platform (admin view).
         Returns all reviews with customer name, rating, category, message, and timestamp.
         """
-        return await run_tool(ReviewService(get_db()).get_all_reviews, MCP_USER)
+        return await run_tool(get_client().get, "/reviews")
 
     @mcp.tool()
     async def delete_review(review_id: str, confirm: bool = False) -> str:
@@ -29,4 +28,4 @@ def register_review_tools(mcp) -> None:
                 "ERROR [CONFIRMATION_REQUIRED]: Set confirm=True to delete this review. "
                 "This action is irreversible."
             )
-        return await run_tool(ReviewService(get_db()).delete_review, review_id, MCP_USER)
+        return await run_tool(get_client().delete, f"/reviews/{review_id}")

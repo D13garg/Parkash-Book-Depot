@@ -8,7 +8,6 @@ interface ProtectedRouteProps {
   allowedRoles?: UserRole[]
 }
 
-// Role → default dashboard mapping
 const ROLE_HOME: Record<UserRole, string> = {
   customer:  "/customer",
   associate: "/associate",
@@ -16,14 +15,16 @@ const ROLE_HOME: Record<UserRole, string> = {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, accessToken } = useAuthStore()
+  const { user, isAuthenticated, sessionReady } = useAuthStore()
 
-  // 1. Not logged in — redirect to login
-  if (!accessToken || !user) {
+  if (!sessionReady) {
+    return null
+  }
+
+  if (!isAuthenticated() || !user) {
     return <Navigate to="/login" replace />
   }
 
-  // 2. Logged in but wrong role — redirect to their correct dashboard
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to={ROLE_HOME[user.role]} replace />
   }

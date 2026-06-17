@@ -1,10 +1,8 @@
-"""Users tools — 4 tools."""
+"""Users tools — 4 tools. Calls the backend over HTTP instead of MongoDB."""
 from __future__ import annotations
-from datetime import datetime, timezone
-from bson import ObjectId
-from parkash_mcp.context import get_db, MCP_USER
-from parkash_mcp.adapter import run_tool, format_error, _serialize
-from backend.app.core.exceptions import NotFoundException, BadRequestException
+from parkash_mcp.context import get_client
+from parkash_mcp.adapter import run_tool, _serialize, format_error
+from parkash_mcp.http import ApiError
 
 
 def register_user_tools(mcp) -> None:
@@ -21,18 +19,13 @@ def register_user_tools(mcp) -> None:
             active_only: If true, only return active accounts.
         """
         try:
-            db = get_db()
-            query = {}
+            users = await get_client().get("/users")
             if role != "all":
-                query["role"] = role
+                users = [u for u in users if u.get("role") == role]
             if active_only:
-                query["is_active"] = True
-            cursor = db["users"].find(query, {"hashed_password": 0})
-            docs = await cursor.to_list(length=None)
-            for d in docs:
-                d["id"] = str(d.pop("_id"))
-            return _serialize(docs)
-        except Exception as e:
+                users = [u for u in users if u.get("is_active")]
+            return _serialize(users)
+        except ApiError as e:
             return format_error(e)
 
     @mcp.tool()
@@ -41,18 +34,7 @@ def register_user_tools(mcp) -> None:
         List all associate accounts (active only).
         Use this before assigning a project to get valid associate IDs and names.
         """
-        try:
-            db = get_db()
-            cursor = db["users"].find(
-                {"role": "associate", "is_active": True},
-                {"hashed_password": 0},
-            )
-            docs = await cursor.to_list(length=None)
-            for d in docs:
-                d["id"] = str(d.pop("_id"))
-            return _serialize(docs)
-        except Exception as e:
-            return format_error(e)
+        return await run_tool(get_client().get, "/users/associates")
 
     @mcp.tool()
     async def deactivate_user(user_id: str) -> str:
@@ -62,29 +44,7 @@ def register_user_tools(mcp) -> None:
         Args:
             user_id: MongoDB ObjectId string of the user.
         """
-        try:
-            db = get_db()
-            if user_id == MCP_USER.id:
-                return "ERROR [BAD_REQUEST]: Cannot deactivate the MCP server identity."
-            doc = await db["users"].find_one({"_id": ObjectId(user_id)})
-            if not doc:
-                raise NotFoundException("User")
-            if doc.get("role") == "admin":
-                raise BadRequestException("Cannot deactivate admin accounts.")
-            await db["users"].update_one(
-                {"_id": ObjectId(user_id)},
-                {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc)}},
-            )
-            from backend.app.services.audit_log_service import audit
-            await audit(
-                db=db, actor_id=MCP_USER.id, actor_name=MCP_USER.name,
-                actor_role=MCP_USER.role, action="user_deactivated",
-                description=f"MCP deactivated user: {doc['name']} ({doc['email']})",
-                entity_type="user", entity_id=user_id,
-            )
-            return _serialize({"message": f"User '{doc['name']}' deactivated successfully."})
-        except Exception as e:
-            return format_error(e)
+        return await run_tool(get_client().patch, f"/users/{user_id}/deactivate", json={})
 
     @mcp.tool()
     async def reactivate_user(user_id: str) -> str:
@@ -93,22 +53,4 @@ def register_user_tools(mcp) -> None:
         Args:
             user_id: MongoDB ObjectId string of the user.
         """
-        try:
-            db = get_db()
-            doc = await db["users"].find_one({"_id": ObjectId(user_id)})
-            if not doc:
-                raise NotFoundException("User")
-            await db["users"].update_one(
-                {"_id": ObjectId(user_id)},
-                {"$set": {"is_active": True, "updated_at": datetime.now(timezone.utc)}},
-            )
-            from backend.app.services.audit_log_service import audit
-            await audit(
-                db=db, actor_id=MCP_USER.id, actor_name=MCP_USER.name,
-                actor_role=MCP_USER.role, action="user_reactivated",
-                description=f"MCP reactivated user: {doc['name']} ({doc['email']})",
-                entity_type="user", entity_id=user_id,
-            )
-            return _serialize({"message": f"User '{doc['name']}' reactivated successfully."})
-        except Exception as e:
-            return format_error(e)
+        return await run_tool(get_client().patch, f"/users/{user_id}/reactivate", json={})

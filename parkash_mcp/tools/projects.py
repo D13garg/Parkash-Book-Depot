@@ -1,16 +1,8 @@
-"""Projects tools — 11 tools."""
+"""Projects tools — 11 tools. Calls the backend over HTTP instead of MongoDB."""
 from __future__ import annotations
 from typing import Optional
-from parkash_mcp.context import get_db, MCP_USER
-from parkash_mcp.adapter import run_tool, format_error
-from backend.app.services.project_service import ProjectService
-from backend.app.services.project_request_service import ProjectRequestService
-from backend.app.schemas.project import (
-    AssignProjectRequest,
-    UpdateProjectStatusRequest,
-    CreateProjectUpdateRequest,
-)
-from backend.app.schemas.project_request import UpdateRequestStatusRequest
+from parkash_mcp.context import get_client
+from parkash_mcp.adapter import run_tool
 
 
 def register_project_tools(mcp) -> None:
@@ -32,11 +24,12 @@ def register_project_tools(mcp) -> None:
             page: Page number (default 1).
             page_size: Results per page (default 20).
         """
-        return await run_tool(
-            ProjectRequestService(get_db()).get_requests,
-            MCP_USER, page=page, page_size=page_size,
-            status=status, request_type=request_type,
-        )
+        params = {
+            "page": page, "page_size": page_size,
+            "status": status, "request_type": request_type,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        return await run_tool(get_client().get, "/project-requests", params=params)
 
     @mcp.tool()
     async def get_project_request(request_id: str) -> str:
@@ -45,10 +38,7 @@ def register_project_tools(mcp) -> None:
         Args:
             request_id: MongoDB ObjectId string of the request.
         """
-        return await run_tool(
-            ProjectRequestService(get_db()).get_request,
-            request_id, MCP_USER,
-        )
+        return await run_tool(get_client().get, f"/project-requests/{request_id}")
 
     @mcp.tool()
     async def update_request_status(request_id: str, status: str, admin_notes: Optional[str] = None) -> str:
@@ -60,13 +50,10 @@ def register_project_tools(mcp) -> None:
             status: New status — under_review, accepted, rejected.
             admin_notes: Optional notes to attach to the status change.
         """
-        try:
-            data = UpdateRequestStatusRequest(status=status, admin_notes=admin_notes)
-        except Exception as e:
-            return f"ERROR [VALIDATION]: {e}"
+        payload = {"status": status, "admin_notes": admin_notes}
+        payload = {k: v for k, v in payload.items() if v is not None}
         return await run_tool(
-            ProjectRequestService(get_db()).update_status,
-            request_id, data, MCP_USER,
+            get_client().patch, f"/project-requests/{request_id}/status", json=payload
         )
 
     @mcp.tool()
@@ -78,8 +65,7 @@ def register_project_tools(mcp) -> None:
             request_id: MongoDB ObjectId string of the accepted request.
         """
         return await run_tool(
-            ProjectService(get_db()).convert_request_to_project,
-            request_id, MCP_USER,
+            get_client().post, f"/projects/from-request/{request_id}", json={}
         )
 
     # ── Projects ──────────────────────────────────────────────────────────────
@@ -97,10 +83,9 @@ def register_project_tools(mcp) -> None:
             page: Page number (default 1).
             page_size: Results per page (default 20).
         """
-        return await run_tool(
-            ProjectService(get_db()).get_projects,
-            MCP_USER, page=page, page_size=page_size, status=status,
-        )
+        params = {"page": page, "page_size": page_size, "status": status}
+        params = {k: v for k, v in params.items() if v is not None}
+        return await run_tool(get_client().get, "/projects", params=params)
 
     @mcp.tool()
     async def get_project(project_id: str) -> str:
@@ -109,10 +94,7 @@ def register_project_tools(mcp) -> None:
         Args:
             project_id: MongoDB ObjectId string of the project.
         """
-        return await run_tool(
-            ProjectService(get_db()).get_project,
-            project_id, MCP_USER,
-        )
+        return await run_tool(get_client().get, f"/projects/{project_id}")
 
     @mcp.tool()
     async def get_project_updates(project_id: str) -> str:
@@ -121,10 +103,7 @@ def register_project_tools(mcp) -> None:
         Args:
             project_id: MongoDB ObjectId string of the project.
         """
-        return await run_tool(
-            ProjectService(get_db()).get_updates,
-            project_id, MCP_USER,
-        )
+        return await run_tool(get_client().get, f"/projects/{project_id}/updates")
 
     @mcp.tool()
     async def assign_project_associate(project_id: str, associate_id: str) -> str:
@@ -135,13 +114,10 @@ def register_project_tools(mcp) -> None:
             project_id: MongoDB ObjectId string of the project.
             associate_id: MongoDB ObjectId string of the associate user.
         """
-        try:
-            data = AssignProjectRequest(associate_id=associate_id)
-        except Exception as e:
-            return f"ERROR [VALIDATION]: {e}"
         return await run_tool(
-            ProjectService(get_db()).assign_associate,
-            project_id, data, MCP_USER,
+            get_client().patch,
+            f"/projects/{project_id}/assign",
+            json={"associate_id": associate_id},
         )
 
     @mcp.tool()
@@ -155,13 +131,8 @@ def register_project_tools(mcp) -> None:
             project_id: MongoDB ObjectId string of the project.
             status: New status value.
         """
-        try:
-            data = UpdateProjectStatusRequest(status=status)
-        except Exception as e:
-            return f"ERROR [VALIDATION]: {e}"
         return await run_tool(
-            ProjectService(get_db()).update_status,
-            project_id, data, MCP_USER,
+            get_client().patch, f"/projects/{project_id}/status", json={"status": status}
         )
 
     @mcp.tool()
@@ -179,15 +150,8 @@ def register_project_tools(mcp) -> None:
             content: Detailed update description.
             progress_percentage: Optional progress indicator 0-100.
         """
-        try:
-            data = CreateProjectUpdateRequest(
-                title=title,
-                content=content,
-                progress_percentage=progress_percentage,
-            )
-        except Exception as e:
-            return f"ERROR [VALIDATION]: {e}"
+        payload = {"title": title, "content": content, "progress_percentage": progress_percentage}
+        payload = {k: v for k, v in payload.items() if v is not None}
         return await run_tool(
-            ProjectService(get_db()).add_update,
-            project_id, data, MCP_USER,
+            get_client().post, f"/projects/{project_id}/updates", json=payload
         )

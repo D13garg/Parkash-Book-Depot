@@ -1,10 +1,24 @@
 """
 Parkash Book Depot — MCP Server
 
-32 tools across 6 domains. Architecture: MCP → Services → MongoDB (no HTTP).
+33 tools across 6 domains. Architecture: MCP → HTTPS → Backend API → MongoDB.
+
+This server no longer connects to MongoDB directly. Every tool call is an
+HTTPS request to the deployed backend, which defaults to the Railway
+production deployment:
+
+    https://parkash-book-depot-production.up.railway.app/api/v1
+
+Override the target with PARKASH_API_URL (e.g. for local development against
+`http://localhost:8000/api/v1`).
+
+Most tools hit admin-only endpoints, so the server needs credentials for an
+admin account. Provide either:
+  - PARKASH_ACCESS_TOKEN — an already-issued JWT access token, or
+  - PARKASH_ADMIN_EMAIL + PARKASH_ADMIN_PASSWORD — the server logs in lazily
+    on first request and caches the resulting access token in memory.
 
 Running:
-    cd Parkash-Book-Depot
     python -m parkash_mcp.server
 
 Claude Desktop (~/.claude/claude_desktop_config.json):
@@ -15,12 +29,9 @@ Claude Desktop (~/.claude/claude_desktop_config.json):
       "args": ["-m", "parkash_mcp.server"],
       "cwd": "/path/to/Parkash-Book-Depot",
       "env": {
-        "MONGODB_URL": "...",
-        "MONGODB_DB_NAME": "parkash_book_depot",
-        "SECRET_KEY": "...", "PEPPER": "...",
-        "CLOUDINARY_CLOUD_NAME": "...", "CLOUDINARY_API_KEY": "...", "CLOUDINARY_API_SECRET": "...",
-        "RESEND_API_KEY": "...", "EMAIL_FROM": "...",
-        "GOOGLE_CLIENT_ID": "...", "GOOGLE_CLIENT_SECRET": "..."
+        "PARKASH_API_URL": "https://parkash-book-depot-production.up.railway.app/api/v1",
+        "PARKASH_ADMIN_EMAIL": "...",
+        "PARKASH_ADMIN_PASSWORD": "..."
       }
     }
   }
@@ -28,15 +39,11 @@ Claude Desktop (~/.claude/claude_desktop_config.json):
 """
 
 from __future__ import annotations
-import sys
-import os
 import asyncio
 import logging
 
-# Ensure backend/ is on the path so `app.*` imports resolve
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend"))
-
 from mcp.server.fastmcp import FastMCP
+from parkash_mcp.config import get_base_url
 from parkash_mcp.context import startup, shutdown
 from parkash_mcp.tools.books import register_book_tools
 from parkash_mcp.tools.orders import register_order_tools
@@ -44,6 +51,7 @@ from parkash_mcp.tools.users import register_user_tools
 from parkash_mcp.tools.projects import register_project_tools
 from parkash_mcp.tools.reviews import register_review_tools
 from parkash_mcp.tools.observability import register_observability_tools
+from parkash_mcp.tools.health import register_health_tools
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +59,9 @@ mcp = FastMCP(
     name="Parkash Book Depot",
     instructions=(
         "You have admin-level access to the Parkash Book Depot management system. "
-        "All data comes directly from MongoDB — no HTTP round-trips. "
-        "All write actions are audit-logged under 'MCP Server' identity. "
-        "Use read tools freely. For destructive tools (delete_review), "
+        "All data comes from the backend's HTTPS API (no direct database access). "
+        "All write actions are audit-logged server-side under the authenticated "
+        "admin identity. Use read tools freely. For destructive tools (delete_review), "
         "confirm=True is required. Never attempt to place or cancel customer orders — "
         "those are customer-only actions not available here."
     ),
@@ -66,13 +74,14 @@ register_user_tools(mcp)
 register_project_tools(mcp)
 register_review_tools(mcp)
 register_observability_tools(mcp)
+register_health_tools(mcp)
 
 
 async def _run() -> None:
     await startup()
-    logger.info("MCP Server: MongoDB connected — 32 tools ready")
+    logger.info(f"MCP Server: targeting {get_base_url()} — 33 tools ready")
     try:
-        await mcp.run_async()
+        await mcp.run_stdio_async()
     finally:
         await shutdown()
         logger.info("MCP Server: shutdown complete")

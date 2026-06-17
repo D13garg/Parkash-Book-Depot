@@ -1,47 +1,35 @@
 """
-MCP Context — database lifecycle and synthetic MCP identity.
+MCP Context — shared HTTP client lifecycle.
 
-The MCP server connects directly to MongoDB using the same Motor client
-as the FastAPI app. No HTTP round-trips. No JWT tokens needed.
-
-All write actions are attributed to MCP_USER in the audit log so every
-AI-initiated action is distinguishable from human admin actions.
+The MCP server now talks to the deployed Parkash Book Depot backend over
+HTTPS (PARKASH_API_URL, defaulting to the Railway production deployment)
+instead of connecting to MongoDB directly. This module owns the single
+shared ApiClient instance used by every tool module.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from parkash_mcp.http import ApiClient
 
-from backend.app.core.database import connect_to_mongo, close_mongo_connection, get_database
-from backend.app.core.enums import UserRole
-from backend.app.models.user import UserModel
-
-
-# ── Synthetic MCP actor — used as current_user in all service calls ───────────
-MCP_USER = UserModel(
-    **{
-        "_id": "mcp-server",
-        "name": "MCP Server",
-        "email": "mcp@internal.parkashbookdepot.com",
-        "hashed_password": None,
-        "role": UserRole.ADMIN.value,
-        "is_active": True,
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc),
-    }
-)
+_client: ApiClient | None = None
 
 
 async def startup() -> None:
-    """Establish MongoDB connection on MCP server startup."""
-    await connect_to_mongo()
+    """Create the shared HTTP client on MCP server startup."""
+    global _client
+    _client = ApiClient()
 
 
 async def shutdown() -> None:
-    """Close MongoDB connection on MCP server shutdown."""
-    await close_mongo_connection()
+    """Close the shared HTTP client on MCP server shutdown."""
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
 
 
-def get_db():
-    """Return active MongoDB database instance (same singleton as FastAPI)."""
-    return get_database()
+def get_client() -> ApiClient:
+    """Return the shared ApiClient instance (same singleton across tools)."""
+    if _client is None:
+        raise RuntimeError("MCP context not started — call startup() first.")
+    return _client

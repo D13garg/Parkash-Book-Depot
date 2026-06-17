@@ -1,9 +1,20 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.dependencies.database import get_db
 from app.dependencies.auth import get_current_user
 from app.services.auth_service import AuthService
+from app.core.security import (
+    ACCESS_TOKEN_COOKIE,
+    REFRESH_TOKEN_COOKIE,
+    CSRF_TOKEN_COOKIE,
+    CSRF_TOKEN_HEADER,
+    generate_csrf_token,
+    set_auth_cookies,
+    set_access_token_cookie,
+    clear_auth_cookies,
+)
+from app.core.exceptions import UnauthorizedException
 from app.schemas.user import (
     LoginRequest,
     RefreshTokenRequest,
@@ -45,6 +56,7 @@ async def register_initiate(
 @limiter.limit("10/minute")
 async def register_verify(
     request: Request,
+    response: Response,
     data: OTPVerifyRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
@@ -54,7 +66,14 @@ async def register_verify(
     Rate limited: 10/minute per IP. OTP service limits to 5 wrong attempts before lockout.
     """
     service = AuthService(db)
-    return await service.register_verify(data)
+    result = await service.register_verify(data)
+    set_auth_cookies(
+        response,
+        result.access_token,
+        result.refresh_token,
+        generate_csrf_token(),
+    )
+    return result
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
@@ -63,12 +82,20 @@ async def register_verify(
 @limiter.limit("10/minute")
 async def login(
     request: Request,
+    response: Response,
     data: LoginRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
     """Login with email and password."""
     service = AuthService(db)
-    return await service.login(data)
+    result = await service.login(data)
+    set_auth_cookies(
+        response,
+        result.access_token,
+        result.refresh_token,
+        generate_csrf_token(),
+    )
+    return result
 
 
 # ── Forgot password (2-step: initiate → verify OTP + new password) ────────────
@@ -114,6 +141,7 @@ async def forgot_password_verify(
 @limiter.limit("10/minute")
 async def google_auth(
     request: Request,
+    response: Response,
     data: GoogleAuthRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
@@ -123,7 +151,14 @@ async def google_auth(
     Creates account on first login, finds existing on subsequent logins.
     """
     service = AuthService(db)
-    return await service.google_auth(data)
+    result = await service.google_auth(data)
+    set_auth_cookies(
+        response,
+        result.access_token,
+        result.refresh_token,
+        generate_csrf_token(),
+    )
+    return result
 
 
 # ── Token refresh ─────────────────────────────────────────────────────────────
@@ -132,21 +167,40 @@ async def google_auth(
 @limiter.limit("20/minute")
 async def refresh_token(
     request: Request,
+    response: Response,
     data: RefreshTokenRequest,
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
     """Exchange a valid refresh token for a new access token."""
+    refresh = request.cookies.get(REFRESH_TOKEN_COOKIE) or data.refresh_token
+    if not refresh:
+        raise UnauthorizedException("Refresh token required.")
+
     service = AuthService(db)
-    return await service.refresh(data.refresh_token)
+    result = await service.refresh(refresh)
+    set_access_token_cookie(response, result.access_token)
+    return result
+
+
+@router.post("/logout", response_model=MessageResponse)
+async def logout(response: Response):
+    """Clear auth cookies."""
+    clear_auth_cookies(response)
+    return MessageResponse(message="Logged out successfully.")
 
 
 # ── Current user ──────────────────────────────────────────────────────────────
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(
+    request: Request,
+    response: Response,
     current_user: UserModel = Depends(get_current_user),
 ):
     """Returns the currently authenticated user's profile."""
+    csrf = request.cookies.get(CSRF_TOKEN_COOKIE)
+    if csrf:
+        response.headers[CSRF_TOKEN_HEADER] = csrf
     return UserResponse(
         id=current_user.id,
         name=current_user.name,

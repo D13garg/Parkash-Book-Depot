@@ -15,7 +15,12 @@ const ROLE_HOME = { customer: "/customer", associate: "/associate", admin: "/adm
 
 export function useAuth() {
   const navigate = useNavigate()
-  const { setAuth, clearAuth, user, isAuthenticated } = useAuthStore()
+  const { setUser, clearAuth, user, isAuthenticated } = useAuthStore()
+
+  const handleAuthSuccess = (data: TokenResponse) => {
+    setUser(data.user)
+    navigate(ROLE_HOME[data.user.role])
+  }
 
   // ── Login ──────────────────────────────────────────────────────────────────
   const loginMutation = useMutation({
@@ -23,10 +28,7 @@ export function useAuth() {
       const res = await api.post<TokenResponse>("/auth/login", data)
       return res.data
     },
-    onSuccess: (data) => {
-      setAuth(data.user, data.access_token, data.refresh_token)
-      navigate(ROLE_HOME[data.user.role])
-    },
+    onSuccess: handleAuthSuccess,
   })
 
   // ── Register step 1: send OTP ──────────────────────────────────────────────
@@ -46,10 +48,7 @@ export function useAuth() {
       const res = await api.post<TokenResponse>("/auth/register/verify", data)
       return res.data
     },
-    onSuccess: (data) => {
-      setAuth(data.user, data.access_token, data.refresh_token)
-      navigate(ROLE_HOME[data.user.role])
-    },
+    onSuccess: handleAuthSuccess,
   })
 
   // ── Forgot password step 1: send OTP ──────────────────────────────────────
@@ -80,39 +79,38 @@ export function useAuth() {
       const res = await api.post<TokenResponse>("/auth/google", data)
       return res.data
     },
-    onSuccess: (data) => {
-      setAuth(data.user, data.access_token, data.refresh_token)
-      navigate(ROLE_HOME[data.user.role])
-    },
+    onSuccess: handleAuthSuccess,
   })
 
-  const logout = () => {
-    clearAuth()
-    navigate("/login")
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout")
+    } catch {
+      // Clear local state even if the server call fails
+    } finally {
+      clearAuth()
+      navigate("/login")
+    }
   }
 
   return {
     user,
     isAuthenticated: isAuthenticated(),
-    // Login
     login: loginMutation.mutate,
     loginError: loginMutation.error,
     isLoggingIn: loginMutation.isPending,
-    // Register
     registerInitiate: registerInitiateMutation.mutate,
     registerInitiateError: registerInitiateMutation.error,
     isRegisterInitiating: registerInitiateMutation.isPending,
     registerVerify: registerVerifyMutation.mutate,
     registerVerifyError: registerVerifyMutation.error,
     isRegisterVerifying: registerVerifyMutation.isPending,
-    // Forgot password
     forgotPasswordInitiate: forgotPasswordInitiateMutation.mutate,
     forgotPasswordInitiateError: forgotPasswordInitiateMutation.error,
     isForgotPasswordInitiating: forgotPasswordInitiateMutation.isPending,
     forgotPasswordVerify: forgotPasswordVerifyMutation.mutate,
     forgotPasswordVerifyError: forgotPasswordVerifyMutation.error,
     isForgotPasswordVerifying: forgotPasswordVerifyMutation.isPending,
-    // Google
     googleAuth: googleAuthMutation.mutate,
     googleAuthError: googleAuthMutation.error,
     isGoogleAuthing: googleAuthMutation.isPending,

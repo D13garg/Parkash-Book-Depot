@@ -1,6 +1,7 @@
 import time
 import logging
-from fastapi import Depends
+from typing import Optional
+from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -8,30 +9,40 @@ from app.dependencies.database import get_db
 from app.services.auth_service import AuthService
 from app.permissions.role_permissions import require_admin, require_associate_or_admin
 from app.models.user import UserModel
+from app.core.security import ACCESS_TOKEN_COOKIE
+from app.core.exceptions import UnauthorizedException
 
 logger = logging.getLogger(__name__)
 
-# Extracts the Bearer token from the Authorization header
-bearer_scheme = HTTPBearer()
+# auto_error=False so browser clients can authenticate via httpOnly cookie alone
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: AsyncIOMotorDatabase = Depends(get_db),
 ) -> UserModel:
     """
     Core auth dependency — validates JWT and returns the current user.
-    Use this on any route that requires authentication.
+    Reads access_token from httpOnly cookie first, falls back to Bearer header
+    for non-browser clients (CLI, MCP server).
 
     Usage:
         @router.get("/me")
         async def me(current_user: UserModel = Depends(get_current_user)):
             ...
     """
+    token = request.cookies.get(ACCESS_TOKEN_COOKIE)
+    if not token and credentials:
+        token = credentials.credentials
+    if not token:
+        raise UnauthorizedException("Not authenticated.")
+
     perf_start = time.perf_counter()
-    
+
     service = AuthService(db)
-    user = await service.get_current_user_by_token(credentials.credentials)
+    user = await service.get_current_user_by_token(token)
     
     perf_elapsed = time.perf_counter() - perf_start
     logger.info(f"[PERF] AUTH TOTAL: {perf_elapsed:.3f}s (user={user.email})")

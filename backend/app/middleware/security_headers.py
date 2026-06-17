@@ -2,6 +2,51 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from app.core.config import settings
+from app.core.security import CSRF_TOKEN_COOKIE
+
+
+# Routes that establish a session — no CSRF cookie exists yet
+CSRF_EXEMPT_PATHS = {
+    f"{settings.API_V1_PREFIX}/auth/login",
+    f"{settings.API_V1_PREFIX}/auth/register/initiate",
+    f"{settings.API_V1_PREFIX}/auth/register/verify",
+    f"{settings.API_V1_PREFIX}/auth/google",
+    f"{settings.API_V1_PREFIX}/auth/forgot-password/initiate",
+    f"{settings.API_V1_PREFIX}/auth/forgot-password/verify",
+}
+
+
+class CsrfMiddleware(BaseHTTPMiddleware):
+    """
+    Double-submit cookie CSRF protection for cookie-authenticated browser clients.
+    Skips validation for safe methods, Bearer-token clients (CLI/MCP), and
+    session-establishing auth endpoints.
+    """
+    async def dispatch(self, request: Request, call_next):
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            return await call_next(request)
+
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer "):
+            return await call_next(request)
+
+        if request.url.path in CSRF_EXEMPT_PATHS:
+            return await call_next(request)
+
+        csrf_cookie = request.cookies.get(CSRF_TOKEN_COOKIE)
+        # No CSRF cookie → non-browser client (CLI/MCP) using Bearer or body tokens
+        if not csrf_cookie:
+            return await call_next(request)
+
+        csrf_header = request.headers.get("x-csrf-token")
+
+        if not csrf_header or csrf_cookie != csrf_header:
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "CSRF validation failed."},
+            )
+
+        return await call_next(request)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

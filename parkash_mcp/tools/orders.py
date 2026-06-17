@@ -1,10 +1,8 @@
-"""Orders tools — 3 tools."""
+"""Orders tools — 3 tools. Calls the backend over HTTP instead of MongoDB."""
 from __future__ import annotations
 from typing import Optional
-from parkash_mcp.context import get_db, MCP_USER
-from parkash_mcp.adapter import run_tool, format_error
-from backend.app.services.order_service import OrderService
-from backend.app.schemas.order import UpdateOrderStatusRequest
+from parkash_mcp.context import get_client
+from parkash_mcp.adapter import run_tool
 
 
 def register_order_tools(mcp) -> None:
@@ -22,10 +20,9 @@ def register_order_tools(mcp) -> None:
             page: Page number (default 1).
             page_size: Results per page (default 20).
         """
-        return await run_tool(
-            OrderService(get_db()).get_all_orders,
-            status, page, page_size,
-        )
+        params = {"page": page, "page_size": page_size, "status": status}
+        params = {k: v for k, v in params.items() if v is not None}
+        return await run_tool(get_client().get, "/orders", params=params)
 
     @mcp.tool()
     async def get_order(order_id: str) -> str:
@@ -34,7 +31,7 @@ def register_order_tools(mcp) -> None:
         Args:
             order_id: MongoDB ObjectId string of the order.
         """
-        return await run_tool(OrderService(get_db()).get_order, order_id, MCP_USER)
+        return await run_tool(get_client().get, f"/orders/{order_id}")
 
     @mcp.tool()
     async def update_order_status(order_id: str, status: str) -> str:
@@ -46,8 +43,6 @@ def register_order_tools(mcp) -> None:
             order_id: MongoDB ObjectId string of the order.
             status: New status value.
         """
-        try:
-            data = UpdateOrderStatusRequest(status=status)
-        except Exception as e:
-            return f"ERROR [VALIDATION]: {e}"
-        return await run_tool(OrderService(get_db()).update_status, order_id, data, MCP_USER)
+        return await run_tool(
+            get_client().patch, f"/orders/{order_id}/status", json={"status": status}
+        )

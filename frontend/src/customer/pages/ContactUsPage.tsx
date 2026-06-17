@@ -61,7 +61,7 @@ export function ContactUsPage() {
               href="tel:+919876543210"
               className="text-sm text-primary hover:underline mt-1 block"
             >
-              +91 98765 43210
+              +91 9803032396
             </a>
           </div>
         </div>
