@@ -31,7 +31,11 @@ class Settings(BaseSettings):
 
     # CORS
     ALLOWED_ORIGINS: List[str] = Field(
-        default=["http://localhost:5173", "http://localhost:3000"]
+        default=[
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://parkash-book-depot.vercel.app",
+        ]
     )
 
     # Request limits
