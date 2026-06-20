@@ -46,3 +46,16 @@ class UserRepository:
             {"$set": update_data}
         )
         return await self.find_by_id(user_id)
+
+    async def bump_token_version(self, user_id: str) -> None:
+        """
+        Atomically increments token_version, invalidating every refresh token
+        issued before this call (refresh() checks the version embedded in the
+        token against the current value on the user document). Used on logout
+        and password change/reset, since neither previously had any way to
+        revoke an already-issued refresh token before its natural expiry.
+        """
+        await self.collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$inc": {"token_version": 1}, "$set": {"updated_at": datetime.now(timezone.utc)}},
+        )

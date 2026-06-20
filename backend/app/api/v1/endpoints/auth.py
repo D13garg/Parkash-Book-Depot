@@ -4,6 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.dependencies.database import get_db
 from app.dependencies.auth import get_current_user
 from app.services.auth_service import AuthService
+from app.repositories.user_repository import UserRepository
 from app.core.security import (
     ACCESS_TOKEN_COOKIE,
     REFRESH_TOKEN_COOKIE,
@@ -13,6 +14,7 @@ from app.core.security import (
     set_auth_cookies,
     set_access_token_cookie,
     clear_auth_cookies,
+    decode_token,
 )
 from app.core.exceptions import UnauthorizedException
 from app.schemas.user import (
@@ -183,8 +185,33 @@ async def refresh_token(
 
 
 @router.post("/logout", response_model=MessageResponse)
-async def logout(response: Response):
-    """Clear auth cookies."""
+async def logout(request: Request, response: Response, db: AsyncIOMotorDatabase = Depends(get_db)):
+    """
+    Clear auth cookies and revoke the refresh token server-side.
+
+    Previously this only cleared cookies — a copied-out refresh token (e.g.
+    stolen from a compromised device, or just lifted from browser storage
+    before the user logged out) would keep working for its full lifetime
+    regardless of logout. Bumping token_version closes that gap.
+
+    Deliberately tolerant of a missing/expired/invalid access token: logout
+    should never fail just because the session was already stale — cookies
+    still get cleared either way, and we only attempt the revocation if we
+    can identify who to revoke for.
+
+    Reads the access token from the cookie only, not a Bearer header — this
+    endpoint is for browser sessions. The CLI and MCP server authenticate via
+    Bearer token directly and don't go through a cookie-based login/logout
+    flow at all, so they're unaffected by this endpoint either way.
+    """
+    token = request.cookies.get(ACCESS_TOKEN_COOKIE)
+    if token:
+        payload = decode_token(token)
+        if payload and payload.get("sub"):
+            try:
+                await UserRepository(db).bump_token_version(payload["sub"])
+            except Exception:
+                pass  # logout must still succeed even if revocation lookup fails
     clear_auth_cookies(response)
     return MessageResponse(message="Logged out successfully.")
 

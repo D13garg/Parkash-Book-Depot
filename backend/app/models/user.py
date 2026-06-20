@@ -18,6 +18,7 @@ class UserModel(BaseModel):
     is_active: bool = True
     phone: Optional[str] = None
     address: Optional[str] = None
+    token_version: int = 0  # bumped on logout/password change to invalidate outstanding refresh tokens
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

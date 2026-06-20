@@ -41,10 +41,14 @@ def _to_user_response(user: UserModel) -> UserResponse:
 
 
 def _make_tokens(user: UserModel) -> dict:
-    payload = {"sub": user.id, "role": user.role}
+    access_payload = {"sub": user.id, "role": user.role}
+    # token_version is embedded only in the refresh token: access tokens are
+    # short-lived (30 min) so a stale one expires naturally soon after revocation;
+    # refresh tokens live for days, which is exactly the gap bump_token_version closes.
+    refresh_payload = {"sub": user.id, "role": user.role, "token_version": user.token_version}
     return {
-        "access_token": create_access_token(payload),
-        "refresh_token": create_refresh_token(payload),
+        "access_token": create_access_token(access_payload),
+        "refresh_token": create_refresh_token(refresh_payload),
     }
 
 
@@ -205,6 +209,11 @@ class AuthService:
             "hashed_password": new_hash,
             "updated_at": datetime.now(timezone.utc),
         })
+        # Invalidate every outstanding refresh token. This matters most exactly
+        # when someone resets their password because they suspect compromise —
+        # without this, an attacker's already-issued refresh token would remain
+        # valid for its full lifetime regardless of the reset.
+        await self.user_repo.bump_token_version(user.id)
 
         await audit(
             db=self.db, actor_id=user.id, actor_name=user.name,
@@ -282,6 +291,11 @@ class AuthService:
         user = await self.user_repo.find_by_id(payload["sub"])
         if not user or not user.is_active:
             raise UnauthorizedException("User no longer exists.")
+        # Reject tokens issued before the user's last logout/password change.
+        # payload.get(...) defaults to 0 so tokens minted before this field
+        # existed (token_version was always 0 then) still validate correctly.
+        if payload.get("token_version", 0) != user.token_version:
+            raise UnauthorizedException("Session has been revoked. Please log in again.")
         new_access_token = create_access_token({"sub": user.id, "role": user.role})
         return AccessTokenResponse(access_token=new_access_token)
 
